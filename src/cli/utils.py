@@ -11,4 +11,4 @@ def greet(heading, subHeading):
         print(banner)
 
     if paddedGreeting:
-        print(paddedGreeting)
+        print(paddedGreeting + "\n")
