@@ -1,0 +1,7 @@
+[project]
+name="yoda"
+version="0.0.1"
+description="Centralised System Automations with LLM"
+
+[project.scripts]
+yo="cli.main:main"

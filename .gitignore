@@ -1,0 +1,8 @@
+*.ini
+dev
+
+__pycache__
+*egg*
+
+*.crt
+*.key
