@@ -2,12 +2,12 @@ import argparse
 import socket
 import ssl
 from types import MethodType
-from comms import start_cli_server
+from core import main
 
 
 def start_core_server(args: argparse.Namespace):
     port = args.port
-    start_cli_server(port)
+    main(port)
 
 
 def connect_to_core_server(
@@ -31,5 +31,5 @@ def connect_to_core_server(
     callback(ssock, error)
 
 
-def pack_msg(msg):
+def pack_msg(msg) -> bytes:
     return msg.encode() + b"\0"

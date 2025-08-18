@@ -2,13 +2,15 @@ import socket
 import ssl
 import threading
 
+from app_streams import AppEventStream, UserMessageEvent
+
 buffer_size = 1024
 
 certfile = "server.crt"
 keyfile = "server.key"
 
 
-def start_cli_server(port) -> None:
+def start_comms_server(port: int, event_stream: AppEventStream) -> None:
     hostname = "localhost"
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -23,10 +25,14 @@ def start_cli_server(port) -> None:
         while True:
             conn, addr = ssock.accept()
 
-            threading.Thread(target=handle_client, args=(conn, addr)).start()
+            threading.Thread(
+                target=handle_client, args=(conn, addr, event_stream)
+            ).start()
 
 
-def handle_client(conn: ssl.SSLSocket, addr: tuple[str, int]) -> None:
+def handle_client(
+    conn: ssl.SSLSocket, addr: tuple[str, int], event_stream: AppEventStream
+) -> None:
     with conn:
         buffer = ""
 
@@ -42,4 +48,5 @@ def handle_client(conn: ssl.SSLSocket, addr: tuple[str, int]) -> None:
                 dataBlock, buffer = buffer.split("\0", 1)
 
             if dataBlock:
-                print(f"[{addr[0]}:{addr[1]}] {dataBlock}") # simple echo
+                event = UserMessageEvent(dataBlock)
+                event_stream.push(event)

@@ -1,1 +1,1 @@
-from .server import start_cli_server
+from .server import start_comms_server
