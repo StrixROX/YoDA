@@ -2,6 +2,10 @@
 name="yoda"
 version="0.0.1"
 description="Centralised System Automations with LLM"
+dependencies=[
+    "art",
+    "cryptography"
+]
 
 [project.scripts]
 yo="cli.main:main"

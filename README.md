@@ -16,9 +16,25 @@ python -m venv dev
 source dev/Scripts/activate
 ```
 
+#### Install the Project and Dependencies in Editable Mode
+
+```bash
+pip install -e .
+```
+
+#### Generate Self-Signed SSL Certificates
+
+```bash
+openssl req -newkey rsa:2048 -nodes -keyout server.key -x509 -days 365 -out server.crt
+```
+
+#### Done!
+
+_You are ready to develop!_
+
 ## Building
 
-#### For Development
+#### For Development (in editable mode)
 
 ```bash
 pip install -e .
