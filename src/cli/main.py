@@ -21,7 +21,7 @@ def main() -> None:
 
 def get_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="YoDA", description="Centralised System Automations with LLM"
+        prog="yo", description="Centralised System Automations with LLM"
     )
     parser.add_argument("-p", "--port", type=int, default=1234)
     parser.set_defaults(func=start_interactive_mode)
