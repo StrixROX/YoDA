@@ -4,7 +4,6 @@ import threading
 
 from app_streams.events import AppEventStream, SystemEvent, UserMessageEvent
 
-SOCKET_CONN_TIMEOUT = 1.0 # seconds
 BUFFER_SIZE = 1024
 
 CERT_FILE = "server.crt"
@@ -25,7 +24,7 @@ def start_comms_server(
     context.load_cert_chain(certfile=CERT_FILE, keyfile=KEY_FILE)
 
     with context.wrap_socket(sock, server_side=True) as ssock:
-        ssock.settimeout(SOCKET_CONN_TIMEOUT)
+        ssock.setblocking(False)
 
         while not shutdown_signal.is_set():
             try:
@@ -33,30 +32,41 @@ def start_comms_server(
 
                 threading.Thread(
                     target=handle_client,
-                    args=(conn, addr, event_stream),
+                    args=(conn, addr, event_stream, shutdown_signal),
                 ).start()
             except ConnectionAbortedError:
                 event_stream.push(SystemEvent(SystemEvent.USR_DISCONN_ABT))
-            except TimeoutError:
+            except BlockingIOError:
                 pass
+        else:
+            ssock.close()
+            
 
 
 def handle_client(
     conn: ssl.SSLSocket,
     addr: tuple[str, int],
     event_stream: AppEventStream,
+    shutdown_signal: threading.Event,
 ) -> None:
     connection_id = hash(conn)
 
     event_stream.push(SystemEvent(SystemEvent.USR_CONN_OK, connection_id))
 
+    conn.setblocking(False)
+
     with conn:
         buffer = ""
 
-        while True:
-            print("reading")
-            chunk = conn.recv(BUFFER_SIZE).decode()  # blocking
-            if not chunk:
+        while not shutdown_signal.is_set():
+            chunk = ""
+            try:
+                chunk = conn.recv(BUFFER_SIZE).decode()
+                chunk = None if chunk == "" else chunk
+            except ssl.SSLWantReadError:
+                pass
+
+            if chunk is None:
                 break
 
             buffer += chunk
