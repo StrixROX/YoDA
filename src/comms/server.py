@@ -31,11 +31,7 @@ def start_comms_server(port: int, event_stream: AppEventStream) -> None:
                     target=handle_client, args=(conn, addr, event_stream)
                 ).start()
             except ConnectionAbortedError:
-                event_stream.push(
-                    SystemEvent(
-                        f"User disconnected from core system. Connection aborted."
-                    )
-                )
+                event_stream.push(SystemEvent(SystemEvent.USR_DISCONN_ABT))
 
 
 def handle_client(
@@ -44,7 +40,7 @@ def handle_client(
     connection_id = hash(conn)
 
     event_stream.push(
-        SystemEvent(f"User connected to core system. Connection id: {connection_id}")
+        SystemEvent(SystemEvent.USR_CONN_OK, {"connection_id": connection_id})
     )
 
     with conn:
@@ -66,5 +62,5 @@ def handle_client(
                 event_stream.push(event)
 
     event_stream.push(
-        SystemEvent(f"User disconnected from core system. Connection id: {connection_id}")
+        SystemEvent(SystemEvent.USR_DISCONN_OK, {"connection_id": connection_id})
     )

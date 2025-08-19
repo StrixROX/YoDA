@@ -8,7 +8,7 @@ def main(port: int):
     event_stream = AppEventStream()
 
     # startup event
-    event_stream.put_nowait(SystemEvent("Core system online"))
+    event_stream.push(SystemEvent(SystemEvent.CORE_SYS_ONLINE))
 
     # event handling thread
     threading.Thread(target=event_handler, args=(event_stream,)).start()

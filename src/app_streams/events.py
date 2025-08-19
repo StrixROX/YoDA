@@ -2,7 +2,7 @@ import queue
 
 
 class AppEvent:
-    def __init__(self, type: str, message: str) -> None:
+    def __init__(self, type: str, message: str, data: any = None) -> None:
         if not message:
             raise ValueError("No message provided for AppEvent.")
 
@@ -11,19 +11,26 @@ class AppEvent:
 
         self.type = type
         self.message = message
+        self.data = data
 
     def __str__(self) -> str:
-        return f"<AppEvent type=('{self.type}') message=('{self.message}')>"
+        return f"<AppEvent type=('{self.type}') message=('{self.message}' data={self.data})>"
 
 
 class SystemEvent(AppEvent):
-    def __init__(self, message: str) -> None:
-        super().__init__("system-event", message)
+    USR_CONN_OK = "User connected to core system."
+    USR_DISCONN_OK = "User disconnected from core system."
+    USR_DISCONN_ABT = "User disconnected from core system. Connection aborted."
+    
+    CORE_SYS_ONLINE = "Core system online."
+    
+    def __init__(self, message: str, data: any = None) -> None:
+        super().__init__("system-event", message, data)
 
 
 class UserMessageEvent(AppEvent):
-    def __init__(self, message: str) -> None:
-        super().__init__("user", message)
+    def __init__(self, message: str, data: any = None) -> None:
+        super().__init__("user", message, data)
 
 
 class AppEventStream(queue.Queue):
