@@ -14,7 +14,7 @@ class AppEvent:
         self.data = data
 
     def __str__(self) -> str:
-        return f"<AppEvent type=('{self.type}') message=('{self.message}' data={self.data})>"
+        return f"<AppEvent type=('{self.type}') message=('{self.message}' data='{self.data}')>"
 
 
 class SystemEvent(AppEvent):
