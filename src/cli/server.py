@@ -17,5 +17,8 @@ def connect_to_core_server(
     connect_to_comms_server(port, callback)
 
 
-def send_message_to_core_server(message: str, ssock: ssl.SSLSocket):
-    ssock.sendall(pack_msg(message))
+def send_message_to_core_server(message: str, ssock: ssl.SSLSocket) -> None:
+    if not message.strip():
+        return
+
+    ssock.sendall(pack_msg(message.strip()))
