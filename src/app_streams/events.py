@@ -18,12 +18,20 @@ class AppEvent:
 
 
 class SystemEvent(AppEvent):
-    USR_CONN_OK = "User connected to core system."
-    USR_DISCONN_OK = "User disconnected from core system."
-    USR_DISCONN_ABT = "User disconnected from core system. Connection aborted."
-    
-    CORE_SYS_ONLINE = "Core system online."
-    
+    USR_CONN_OK = "User connected to core system."  # data: int
+    USR_DISCONN_OK = "User disconnected from core system."  # data: int
+    USR_DISCONN_ABT = (
+        "User disconnected from core system. Connection aborted."  # data: None
+    )
+
+    CORE_SYS_ONLINE = "Core system online."  # data: None
+    USR_REQ_SHUTDN = "System shutdown requested by user."  # data: None
+
+    SYS_SPEAK_OK = "System completed speaking."  # data: str
+    SYS_SPEAK_ERR = (
+        "System unable to speak."  # data: {"text_content": str, "error": Exception}
+    )
+
     def __init__(self, message: str, data: any = None) -> None:
         super().__init__("system-event", message, data)
 
