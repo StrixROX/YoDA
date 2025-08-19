@@ -1,63 +1,127 @@
-# Centralised System Automations Platform with LLM - YoDA
+## YoDA — Centralised System Automations with LLM
 
-The aim with this project is to create a platform with features that can help empower system automations with LLM assistance.
+YoDA is a Python-based platform that empowers system automations with LLM assistance. It aims to provide a reliable, extensible foundation for day-to-day automations, memory across sessions, and a friendly CLI to interact with your system.
 
-## Environment Setup
+### Features
 
-#### Create a Development Environment
+- **Session greeting**: A simple greeting on logon.
+- **Persistent memory**: Remembers information across system sessions.
+- **Startup automations**: Remembers and launches your preferred apps at startup.
+- **CLI tooling**: Interact with the app via a dedicated command-line tool.
+
+### Project Status
+
+This project is in early development (version 0.0.1). The scope is intentionally small and evolving. Feedback and contributions are welcome.
+
+## Quickstart
+
+### Prerequisites
+
+- Python 3.10 or newer
+- OpenSSL (for local SSL certificate generation)
+
+### Create and Activate a Virtual Environment
 
 ```bash
 python -m venv dev
-```
-
-#### Load the Environment
-
-```bash
 source dev/Scripts/activate
 ```
 
-#### Install the Project and Dependencies in Editable Mode
+On macOS/Linux, activate with:
+
+```bash
+source dev/bin/activate
+```
+
+### Install (Editable)
 
 ```bash
 pip install -e .
 ```
 
-#### Generate Self-Signed SSL Certificates
+This installs the package and exposes the `yo` CLI.
+
+### Verify Installation
+
+```bash
+yo --help
+```
+
+## Usage
+
+After installation, use the CLI:
+
+```bash
+yo --help
+```
+
+Additional examples and commands will be added as the feature set grows.
+
+## Development
+
+### Local Development Setup
+
+1. Create and activate a virtual environment (see Quickstart).
+2. Install in editable mode:
+   ```bash
+   pip install -e .
+   ```
+3. Run the CLI locally to validate changes:
+   ```bash
+   yo --help
+   ```
+
+### Generating Self-Signed SSL Certificates 
+
+If you need SSL for local testing:
 
 ```bash
 openssl req -newkey rsa:2048 -nodes -keyout server.key -x509 -days 365 -out server.crt
 ```
 
-#### Done!
+## Building & Distribution
 
-_You are ready to develop!_
-
-## Building
-
-#### For Development (in editable mode)
+### Build a Wheel and Source Distribution
 
 ```bash
-pip install -e .
+pip install build
+python -m build
 ```
 
-#### For Production / Testing
+Artifacts will be created under `dist/`.
 
-```bash
-pip install build # install the build package
+## Project Structure
 
-python -m build # build your project
 ```
-
-## Current Scope
-
-- System greeting on logon.
-- Giving Memory to the application - should remember things between system sessions.
-- Simple automations such as remember which apps to run on startup (managed by the app itself) and runnning them.
-- CLI to interact with the app.
+src/
+  app_streams/    # Event stream helpers
+  cli/            # CLI entrypoints and utilities
+  comms/          # Communication/server helpers
+  core/           # Core application logic and event handling
+  llm/            # LLM-related modules (e.g., TTS)
+```
 
 ## Future Scope
 
-- Give the app a display interface where it can show results/images/emotes.
-- Give the app screen context to answer questions about the screen.
+- Display interface for showing results, images, and emotes.
+- Screen context awareness to answer questions about on-screen content.
+- Additional automation primitives and integrations.
 
-_**Note**: Currently accepting suggestions for expanding the scope._
+If you have ideas, please open an issue or a discussion.
+
+## Contributing
+
+Contributions are welcome! Please read `CONTRIBUTING.md` for guidelines on how to propose changes, set up your environment, and submit pull requests.
+
+## Versioning
+
+This project follows semantic versioning where practical: MAJOR.MINOR.PATCH.
+
+## Support & Feedback
+
+- If you encounter a bug, please open an issue with steps to reproduce and environment details.
+- For feature requests or questions, start a discussion or open an issue.
+
+## License
+
+License information will be added to the repository. Until then, please treat the project as source-available for evaluation and contribution discussions only.
