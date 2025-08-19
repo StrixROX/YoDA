@@ -15,6 +15,7 @@ def main() -> None:
     try:
         args.func(args)
     except KeyboardInterrupt:
+        print("\n\n--- Session terminated by user ---")
         pass
 
 

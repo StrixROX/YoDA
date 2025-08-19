@@ -3,6 +3,7 @@ import ssl
 import threading
 
 from app_streams import AppEventStream, UserMessageEvent
+from app_streams import SystemEvent
 
 buffer_size = 1024
 
@@ -23,21 +24,34 @@ def start_comms_server(port: int, event_stream: AppEventStream) -> None:
 
     with context.wrap_socket(sock, server_side=True) as ssock:
         while True:
-            conn, addr = ssock.accept()
+            try:
+                conn, addr = ssock.accept()
 
-            threading.Thread(
-                target=handle_client, args=(conn, addr, event_stream)
-            ).start()
+                threading.Thread(
+                    target=handle_client, args=(conn, addr, event_stream)
+                ).start()
+            except ConnectionAbortedError:
+                event_stream.push(
+                    SystemEvent(
+                        f"User disconnected from core system. Connection aborted."
+                    )
+                )
 
 
 def handle_client(
     conn: ssl.SSLSocket, addr: tuple[str, int], event_stream: AppEventStream
 ) -> None:
+    connection_id = hash(conn)
+
+    event_stream.push(
+        SystemEvent(f"User connected to core system. Connection id: {connection_id}")
+    )
+
     with conn:
         buffer = ""
 
         while True:
-            chunk = conn.recv(buffer_size).decode()
+            chunk = conn.recv(buffer_size).decode()  # blocking
             if not chunk:
                 break
 
@@ -50,3 +64,7 @@ def handle_client(
             if dataBlock:
                 event = UserMessageEvent(dataBlock)
                 event_stream.push(event)
+
+    event_stream.push(
+        SystemEvent(f"User disconnected from core system. Connection id: {connection_id}")
+    )
