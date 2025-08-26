@@ -1,6 +1,6 @@
 from types import MethodType
 
-
+# TODO: implement a TTS solution
 def system_speak(text_content: str, on_complete_callback: MethodType) -> None:
     error = None
 

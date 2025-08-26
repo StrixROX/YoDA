@@ -6,6 +6,7 @@ from app_streams.events import (
     SystemMessageEvent,
     UserMessageEvent,
 )
+from windows_toasts import WindowsToaster, Toast
 
 
 def event_handler(
@@ -72,7 +73,10 @@ def system_message_handler(
     event: SystemMessageEvent,
     event_stream: AppEventStream,
 ) -> None:
-    print(f"> System: {event.message}")
+    toaster = WindowsToaster("YoDA")
+    newToast = Toast()
+    newToast.text_fields = [event.message]
+    toaster.show_toast(newToast)
 
 
 # LLM calls on user input will go here
@@ -80,4 +84,4 @@ def user_message_handler(
     event: UserMessageEvent,
     event_stream: AppEventStream,
 ) -> None:
-    print(f"> User: {event.message}")
+    event_stream.push(SystemMessageEvent(f"Responding to: {event.message}"))
