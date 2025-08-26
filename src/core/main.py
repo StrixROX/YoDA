@@ -1,43 +1,39 @@
 import signal
-import threading
 import time
 
 from app_streams.events import AppEventStream, SystemEvent
 from comms.server import start_comms_server
+from core.controller import ThreadController
 from .events import event_handler
 
 
 def start(port: int):
     event_stream = AppEventStream()
 
+    controller = ThreadController()
+    controller.register("event-handler", event_handler, (event_stream,))
+    controller.register("comms-server", start_comms_server, (port, event_stream))
+
     # startup event
-    event_stream.push(SystemEvent(SystemEvent.CORE_SYS_ONLINE))
+    event_stream.push(SystemEvent(SystemEvent.CORE_SYS_START, controller.get_status()))
 
     # add a SIGINT signal handler before starting persistent threads
-    shutdown_signal = threading.Event()
-
     def shutdown_handler(sig, frame):
         event_stream.push(SystemEvent(SystemEvent.USR_REQ_SHUTDN))
-        shutdown_signal.set()
+        controller.stop_all()
 
     signal.signal(signal.SIGINT, shutdown_handler)
 
-    # event handling thread
-    event_handler_thread = threading.Thread(
-        target=event_handler, args=(event_stream, shutdown_signal)
+    # start the threads
+    controller.start_all(
+        lambda: event_stream.push(
+            SystemEvent(SystemEvent.CORE_SYS_FINISH, controller.get_status())
+        )
     )
-    # comms server thread to receive CLI commands
-    comms_server_thread = threading.Thread(
-        target=start_comms_server, args=(port, event_stream, shutdown_signal)
-    )
-
-    event_handler_thread.start()
-    comms_server_thread.start()
 
     # keep the main thread alive to process signals
     try:
-        while not shutdown_signal.is_set():
+        while not controller.shutdown_signal.is_set():
             time.sleep(1.0)
     finally:
-        event_handler_thread.join()
-        comms_server_thread.join()
+        controller.join_all()

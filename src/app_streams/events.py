@@ -20,14 +20,23 @@ class AppEvent:
 
 
 class SystemEvent(AppEvent):
-    USR_CONN_OK = "User connected to core system."  # data: int
-    USR_DISCONN_OK = "User disconnected from core system."  # data: int
+    CORE_SYS_START = "Starting core systems..."  # data: { [system_name]: bool }
+    CORE_SYS_FINISH = "Finished starting core systems."  # data: { [system_name]: bool }
+    USR_REQ_SHUTDN = "System shutdown requested by user."  # data: None
+
+    COMMS_START = "Starting comms server..."  # data: string
+    COMMS_ONLINE = "Comms server online."  # data: string
+    COMMS_OFFLINE = "Unable to start comms server."  # data: Exception
+
+    USR_CONN_OK = "User connected to comms system."  # data: int
+    USR_DISCONN_OK = "User disconnected from comms system."  # data: int
     USR_DISCONN_ABT = (
-        "User disconnected from core system. Connection aborted."  # data: None
+        "User disconnected from comms system. Connection aborted."  # data: None
     )
 
-    CORE_SYS_ONLINE = "Core system online."  # data: None
-    USR_REQ_SHUTDN = "System shutdown requested by user."  # data: None
+    EVENT_HANDLER_START = "Starting event handler thread..."  # data: None
+    EVENT_HANDLER_ONLINE = "Event handler thread online."  # data: None
+    EVENT_HANDLER_OFFLINE = "Unable to start event handler thread."  # data: Exception
 
     SYS_SPEAK_OK = "System completed speaking."  # data: str
     SYS_SPEAK_ERR = (
@@ -41,6 +50,11 @@ class SystemEvent(AppEvent):
 class UserMessageEvent(AppEvent):
     def __init__(self, message: str, data: any = None) -> None:
         super().__init__("user", message, data)
+
+
+class SystemMessageEvent(AppEvent):
+    def __init__(self, message: str, data: any = None) -> None:
+        super().__init__("system", message, data)
 
 
 class AppEventStream(queue.Queue):
