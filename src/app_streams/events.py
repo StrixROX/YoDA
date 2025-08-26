@@ -1,3 +1,4 @@
+from datetime import datetime as dt
 import queue
 
 
@@ -12,6 +13,7 @@ class AppEvent:
         self.type = type
         self.message = message
         self.data = data
+        self.timestamp = dt.now().timestamp()
 
     def __str__(self) -> str:
         return f"<AppEvent type=('{self.type}') message=('{self.message}') data=({repr(self.data)})>"
