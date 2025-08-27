@@ -1,5 +1,6 @@
+from collections.abc import Callable
 from datetime import datetime as dt
-from types import MethodType
+import threading
 from typing import Dict
 
 
@@ -60,7 +61,7 @@ class SystemMessageEvent(AppEvent):
 
 class AppEventStream:
     def __init__(self) -> None:
-        self.event_hooks: Dict[int, MethodType] = dict()
+        self.event_hooks: Dict[int, Callable[[AppEvent], None]] = dict()
 
     def push(self, event) -> None:
         if not isinstance(event, AppEvent):
@@ -69,9 +70,9 @@ class AppEventStream:
             )
 
         for event_hook_id in self.event_hooks:
-            self.event_hooks[event_hook_id].__call__(event)
+            threading.Thread(target=self.event_hooks[event_hook_id], args=(event,)).start()
 
-    def add_event_hook(self, event_hook: MethodType) -> int:
+    def add_event_hook(self, event_hook: Callable[[AppEvent], None]) -> int:
         event_hook_id = event_hook.__hash__()
 
         self.event_hooks[event_hook_id] = event_hook

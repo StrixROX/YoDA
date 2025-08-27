@@ -7,11 +7,13 @@ from core.controller import ThreadController
 from .events import event_handler
 
 
-def start(port: int):
+def start(port: int) -> None:
     event_stream = AppEventStream()
+    event_stream.add_event_hook(
+        lambda event: event_handler(event=event, event_stream=event_stream)
+    )
 
     controller = ThreadController()
-    controller.register("event-handler", event_handler, (event_stream,))
     controller.register("comms-server", start_comms_server, (port, event_stream))
 
     # startup event

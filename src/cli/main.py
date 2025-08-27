@@ -1,6 +1,6 @@
 import argparse
 
-from .server import start_core_server
+from .server import start_core_systems
 from cli.user_input import start_interactive_mode
 
 
@@ -29,6 +29,6 @@ def get_parser() -> argparse.ArgumentParser:
     start_parser = commands.add_parser(
         "start", help="Start the core server", aliases=["i"]
     )
-    start_parser.set_defaults(func=start_core_server)
+    start_parser.set_defaults(func=start_core_systems)
 
     return parser

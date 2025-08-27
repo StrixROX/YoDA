@@ -1,6 +1,5 @@
-import threading
-from types import MethodType
 from app_streams.events import (
+    AppEvent,
     AppEventStream,
     SystemEvent,
     SystemMessageEvent,
@@ -9,46 +8,13 @@ from app_streams.events import (
 from windows_toasts import WindowsToaster, Toast
 
 
-def event_handler(
-    event_stream: AppEventStream,
-    on_setup: MethodType,
-    shutdown_signal: threading.Event,
-) -> None:
-    event_stream.push(SystemEvent(SystemEvent.EVENT_HANDLER_START))
-    is_handler_status_pushed = False
-
-    while True:
-        event = None
-        try:
-            event = event_stream.get()
-            if not is_handler_status_pushed:
-                event_stream.push(SystemEvent(SystemEvent.EVENT_HANDLER_ONLINE))
-                is_handler_status_pushed = True
-                on_setup(True)
-        except Exception as err:
-            event_stream.push(SystemEvent(SystemEvent.EVENT_HANDLER_OFFLINE, err))
-            is_handler_status_pushed = True
-            on_setup(False)
-            break
-
-        print(f"[{event.type}] {event.message}", event.data)
-
-        if isinstance(event, SystemEvent):
-            threading.Thread(
-                target=system_event_handler, args=(event, event_stream)
-            ).start()
-        elif isinstance(event, SystemMessageEvent):
-            threading.Thread(
-                target=system_message_handler, args=(event, event_stream)
-            ).start()
-        elif isinstance(event, UserMessageEvent):
-            threading.Thread(
-                target=user_message_handler, args=(event, event_stream)
-            ).start()
-
-        # stop event processing on shutdown signal
-        if shutdown_signal.is_set():
-            break
+def event_handler(event: AppEvent, event_stream: AppEventStream) -> None:
+    if isinstance(event, SystemEvent):
+        return system_event_handler(event, event_stream)
+    elif isinstance(event, SystemMessageEvent):
+        return system_message_handler(event, event_stream)
+    elif isinstance(event, UserMessageEvent):
+        return user_message_handler(event, event_stream)
 
 
 # LLM calls on system events will go here
