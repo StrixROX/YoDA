@@ -1,5 +1,6 @@
 from datetime import datetime as dt
-import queue
+from types import MethodType
+from typing import Dict
 
 
 class AppEvent:
@@ -57,9 +58,9 @@ class SystemMessageEvent(AppEvent):
         super().__init__("system", message, data)
 
 
-class AppEventStream(queue.Queue):
-    def __init__(self, maxsize: int = 0) -> None:
-        super().__init__(maxsize)
+class AppEventStream:
+    def __init__(self) -> None:
+        self.event_hooks: Dict[int, MethodType] = dict()
 
     def push(self, event) -> None:
         if not isinstance(event, AppEvent):
@@ -67,4 +68,18 @@ class AppEventStream(queue.Queue):
                 f"Only AppEvent instances can be pushed to AppEventStream, received: {type(event)}"
             )
 
-        self.put_nowait(event)
+        for event_hook_id in self.event_hooks:
+            self.event_hooks[event_hook_id].__call__(event)
+
+    def add_event_hook(self, event_hook: MethodType) -> int:
+        event_hook_id = event_hook.__hash__()
+
+        self.event_hooks[event_hook_id] = event_hook
+
+        return event_hook_id
+
+    def remove_event_hook(self, event_hook_id: int) -> None:
+        if event_hook_id not in self.event_hooks.keys():
+            raise ValueError(f"Hook with id {event_hook_id} does not exist.")
+
+        del self.event_hooks[event_hook_id]
