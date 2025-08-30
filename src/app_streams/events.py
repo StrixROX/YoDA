@@ -40,14 +40,14 @@ class SystemEvent(AppEvent):
         "User disconnected from comms system. Connection aborted."  # data: None
     )
 
-    EVENT_HANDLER_START = "Starting event handler thread..."  # data: None
-    EVENT_HANDLER_ONLINE = "Event handler thread online."  # data: None
-    EVENT_HANDLER_OFFLINE = "Unable to start event handler thread."  # data: Exception
-
     SYS_SPEAK_OK = "System completed speaking."  # data: str
     SYS_SPEAK_ERR = (
         "System unable to speak."  # data: {"text_content": str, "error": Exception}
     )
+    
+    LLM_START = "Starting LLM server..." # data: string
+    LLM_ONLINE = "LLM server online." # data: string
+    LLM_OFFLINE = "Unable to start LLM server." # data: Exception
 
     def __init__(self, message: str, data: any = None) -> None:
         super().__init__(self.type, message, data)

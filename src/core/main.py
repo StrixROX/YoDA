@@ -14,6 +14,7 @@ from core.events_handlers import (
     system_message_handler,
     user_message_handler,
 )
+from llm.chat import start_llm_server
 
 
 def setup_event_hooks(event_stream: AppEventStream) -> None:
@@ -37,6 +38,7 @@ def setup_services(
 ) -> None:
     """Register services with the controller."""
     controller.register("comms-server", start_comms_server, (port, event_stream))
+    controller.register("llm-server", start_llm_server, (event_stream,))
 
 
 def start(port: int) -> None:

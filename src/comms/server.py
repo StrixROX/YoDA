@@ -12,9 +12,11 @@ KEY_FILE = "server.key"
 
 
 def start_comms_server(
-    port: int, event_stream: AppEventStream, on_setup: MethodType, shutdown_signal: threading.Event
+    port: int,
+    event_stream: AppEventStream,
+    on_setup: MethodType,
+    shutdown_signal: threading.Event,
 ) -> None:
-
     hostname = "localhost"
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
