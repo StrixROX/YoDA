@@ -3,7 +3,12 @@ import time
 from types import MethodType
 
 
-class ThreadController:
+class ThreadedServiceSetupController:
+    '''
+    Lets you register a bunch of functions as Threads and gives you option to
+    control them all simultaneously. It also keeps track of which
+    functions have been setup successfully.
+    '''
     def __init__(self) -> None:
         self.controllers = dict()
         self.shutdown_signal = threading.Event()
@@ -63,3 +68,4 @@ class ThreadController:
             statuses[name] = self.controllers[name]["is_ok"]
 
         return statuses
+    
