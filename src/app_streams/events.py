@@ -1,3 +1,4 @@
+from collections import deque
 from collections.abc import Callable
 from datetime import datetime as dt
 from typing import Dict
@@ -66,12 +67,12 @@ class SystemMessageEvent(AppEvent):
 
 
 class AppEventStream:
-    def __init__(self, max_workers=5) -> None:
+    def __init__(self, max_workers=5, history_maxsize=None) -> None:
         self.__event_hooks: Dict[str, Dict[int, Callable[[AppEvent], None]]] = dict(
             {"all": dict()}
         )
         self.__executor = ThreadPoolExecutor(max_workers=max_workers)
-        self.history = []
+        self.history = deque(maxlen=history_maxsize)
 
     # If you truly know that:
     #
@@ -90,6 +91,10 @@ class AppEventStream:
     # "hook set mutations happen synchronously on the main thread
     # only," then it’s fine as-is.
 
+    def __iter_hooks_for_event(self, event_type: str):
+        yield from self.__event_hooks.get(event_type, {}).values()
+        yield from self.__event_hooks.get("all", {}).values()
+
     def push(self, event) -> None:
         if not isinstance(event, AppEvent):
             raise ValueError(
@@ -98,12 +103,8 @@ class AppEventStream:
 
         # send the event to all hooks registered for that event type
         # also send the event to all the hooks registered for 'all' events
-        event_hooks = {
-            **self.__event_hooks.setdefault(event.type, dict()),
-            **self.__event_hooks.setdefault("all", dict()),
-        }
-        for event_hook_id in event_hooks:
-            self.__executor.submit(event_hooks[event_hook_id], event, self)
+        for event_hook in self.__iter_hooks_for_event(event.type):
+            self.__executor.submit(event_hook, event, self)
 
         self.history.append(event)
 
