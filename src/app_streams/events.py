@@ -71,6 +71,7 @@ class AppEventStream:
             {"all": dict()}
         )
         self.__executor = ThreadPoolExecutor(max_workers=max_workers)
+        self.history = []
 
     # If you truly know that:
     #
@@ -103,6 +104,8 @@ class AppEventStream:
         }
         for event_hook_id in event_hooks:
             self.__executor.submit(event_hooks[event_hook_id], event, self)
+
+        self.history.append(event)
 
     def add_event_hook(
         self, event_type: str, event_hook: Callable[[AppEvent], None]
