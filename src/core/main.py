@@ -14,7 +14,7 @@ from core.events_handlers import (
     system_message_handler,
     user_message_handler,
 )
-from llm.chat import start_llm_server
+from llm.server import start_llm_server
 
 
 def setup_event_hooks(event_stream: AppEventStream) -> None:
