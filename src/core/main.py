@@ -30,10 +30,6 @@ def setup_event_hooks(event_stream: AppEventStream) -> None:
         event_type=UserMessageEvent.type,
         event_hook=user_message_handler,
     )
-    event_stream.add_event_hook(
-        event_type="all",
-        event_hook=lambda event, *args: print(event),
-    )
 
 
 def setup_services(
