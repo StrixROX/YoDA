@@ -1,6 +1,7 @@
 from collections import deque
 from collections.abc import Callable
 from datetime import datetime as dt
+import os
 from typing import Dict
 from concurrent.futures import ThreadPoolExecutor
 
@@ -19,7 +20,7 @@ class AppEvent:
         self.timestamp = dt.now().timestamp()
 
     def __str__(self) -> str:
-        return f"<AppEvent type=('{self.type}') message=('{self.message}') data=({repr(self.data)})>"
+        return f"<AppEvent created_on=({dt.fromtimestamp(self.timestamp).isoformat()}) type=('{self.type}') message=('{self.message}') data=({repr(self.data)})>"
 
 
 class SystemEvent(AppEvent):
@@ -136,3 +137,8 @@ class AppEventStream:
 
     def close(self):
         self.__executor.shutdown()
+
+    def dump(self, dump_filename="temp/AppEventStream_history.log"):
+        os.makedirs(os.path.dirname(dump_filename), exist_ok=True)
+        with open(dump_filename, "w") as f:
+            f.writelines([str(event) + "\n" for event in self.history])

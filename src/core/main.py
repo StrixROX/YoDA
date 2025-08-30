@@ -80,3 +80,4 @@ def start(port: int) -> None:
     finally:
         controller.join_all()
         event_stream.close()
+        event_stream.dump()
