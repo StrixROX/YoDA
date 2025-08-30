@@ -5,16 +5,12 @@ from comms.client import connect_to_comms_server, pack_msg
 from core.main import start
 
 
-def start_core_server(args: argparse.Namespace):
-    port = args.port
-    start(port)
+def start_core_systems(args: argparse.Namespace) -> None:
+    start(port=args.port)
 
 
-def connect_to_core_server(
-    args: argparse.Namespace, callback: MethodType
-) -> ssl.SSLSocket:
-    port = args.port
-    connect_to_comms_server(port, callback)
+def connect_to_core_systems(args: argparse.Namespace, callback: MethodType) -> None:
+    connect_to_comms_server(port=args.port, on_connect_callback=callback)
 
 
 def send_message_to_core_server(message: str, ssock: ssl.SSLSocket) -> None:

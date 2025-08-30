@@ -4,7 +4,7 @@ import threading
 import time
 from typing import Union
 
-from cli.server import connect_to_core_server, send_message_to_core_server
+from cli.server import connect_to_core_systems, send_message_to_core_server
 from cli.utils import greet
 
 
@@ -18,12 +18,12 @@ def start_interactive_mode(args: argparse.Namespace) -> None:
         _ssock, _error = ssock, error
 
     connection_thread = threading.Thread(
-        target=connect_to_core_server, args=(args, connection_callback)
+        target=connect_to_core_systems, args=(args, connection_callback)
     )
 
     connection_thread.start()
 
-    loading_text = "Securely connecting to core server"
+    loading_text = "Securely connecting to comms server"
     i = 0
     while not _ssock and not _error:
         dots = "." * (i % 4) + " " * (3 - i % 4)
@@ -36,12 +36,12 @@ def start_interactive_mode(args: argparse.Namespace) -> None:
 
     if _error:
         print(
-            "[Error] Unable to connect to core server. Did you forget to start the core server?\n"
+            "[Error] Unable to connect to comms server. Did you forget to start the comms server?\n"
         )
 
         return
     else:
-        print("- Core server connected\n")
+        print("- Comms server connected\n")
 
     try:
         with _ssock:
@@ -50,4 +50,4 @@ def start_interactive_mode(args: argparse.Namespace) -> None:
 
                 send_message_to_core_server(prompt, _ssock)
     except ssl.SSLEOFError:
-        print("\n[Error] Core system unavailable. Exiting...")
+        print("\n[Error] Comms server unavailable. Exiting...")
