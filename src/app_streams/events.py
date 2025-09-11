@@ -44,10 +44,10 @@ class SystemEvent(AppEvent):
     SYS_SPEAK_ERR = (
         "System unable to speak."  # data: {"text_content": str, "error": Exception}
     )
-    
-    LLM_START = "Starting LLM server..." # data: string
-    LLM_ONLINE = "LLM server online." # data: string
-    LLM_OFFLINE = "Unable to start LLM server." # data: Exception
+
+    LLM_START = "Starting LLM server..."  # data: string
+    LLM_ONLINE = "LLM server online."  # data: string
+    LLM_OFFLINE = "Unable to start LLM server."  # data: Exception
 
     def __init__(self, message: str, data: any = None) -> None:
         super().__init__(self.type, message, data)
@@ -68,6 +68,8 @@ class SystemMessageEvent(AppEvent):
 
 
 class AppEventStream:
+    DEFAULT_DUMP_FILENAME = "temp/AppEventStream_history.log"
+
     def __init__(self, max_workers=5, history_maxsize=None) -> None:
         self.__event_hooks: Dict[str, Dict[int, Callable[[AppEvent], None]]] = dict(
             {"all": dict()}
@@ -138,7 +140,7 @@ class AppEventStream:
     def close(self):
         self.__executor.shutdown()
 
-    def dump(self, dump_filename="temp/AppEventStream_history.log"):
+    def dump(self, dump_filename=DEFAULT_DUMP_FILENAME):
         os.makedirs(os.path.dirname(dump_filename), exist_ok=True)
         with open(dump_filename, "w") as f:
             f.writelines([str(event) + "\n" for event in self.history])
