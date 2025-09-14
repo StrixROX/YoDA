@@ -48,6 +48,9 @@ class SystemEvent(AppEvent):
     LLM_START = "Starting LLM server..."  # data: string
     LLM_ONLINE = "LLM server online."  # data: string
     LLM_OFFLINE = "Unable to start LLM server."  # data: Exception
+    
+    AGENT_ONLINE = "Agent online." # data: string
+    AGENT_OFFLINE = "Agent offline." # data: Exception
 
     def __init__(self, message: str, data: any = None) -> None:
         super().__init__(self.type, message, data)
@@ -107,7 +110,7 @@ class AppEventStream:
         # send the event to all hooks registered for that event type
         # also send the event to all the hooks registered for 'all' events
         for event_hook in self.__iter_hooks_for_event(event.type):
-            self.__executor.submit(event_hook, event, self)
+            self.__executor.submit(event_hook, event)
 
         self.history.append(event)
 

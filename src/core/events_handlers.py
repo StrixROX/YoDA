@@ -1,3 +1,6 @@
+from langchain_core.language_models import LanguageModelInput
+from langchain_core.messages import BaseMessage
+from langchain_core.runnables import Runnable
 from app_streams.events import (
     AppEventStream,
     SystemEvent,
@@ -39,5 +42,6 @@ def system_message_handler(
 def user_message_handler(
     event: UserMessageEvent,
     event_stream: AppEventStream,
+    agent: Runnable[LanguageModelInput, BaseMessage],
 ) -> None:
     event_stream.push(SystemMessageEvent(f"Responding to: {event.message}"))

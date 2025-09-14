@@ -1,6 +1,10 @@
 import signal
 import time
 
+from langchain_core.language_models import LanguageModelInput
+from langchain_core.messages import BaseMessage
+from langchain_core.runnables import Runnable
+
 from app_streams.events import (
     AppEventStream,
     SystemEvent,
@@ -14,34 +18,41 @@ from core.events_handlers import (
     system_message_handler,
     user_message_handler,
 )
+from llm.agent import Agent
 from llm.server import start_llm_server
 
 
-def setup_event_hooks(event_stream: AppEventStream) -> None:
+def setup_event_hooks(
+    event_stream: AppEventStream,
+    agent: Runnable[LanguageModelInput, BaseMessage],
+) -> None:
     """Setup event hooks for the event stream."""
     event_stream.add_event_hook(
         event_type=SystemEvent.type,
-        event_hook=system_event_handler,
+        event_hook=lambda event: system_event_handler(event, event_stream),
     )
     event_stream.add_event_hook(
         event_type=SystemMessageEvent.type,
-        event_hook=system_message_handler,
+        event_hook=lambda event: system_message_handler(event, event_stream),
     )
     event_stream.add_event_hook(
         event_type=UserMessageEvent.type,
-        event_hook=user_message_handler,
+        event_hook=lambda event: user_message_handler(event, event_stream, agent),
     )
 
 
 def setup_services(
-    controller: ThreadedServiceSetupController, event_stream: AppEventStream, port: int
+    controller: ThreadedServiceSetupController,
+    event_stream: AppEventStream,
+    comms_port: int,
+    ollama_port: int,
 ) -> None:
     """Register services with the controller."""
-    controller.register("comms-server", start_comms_server, (port, event_stream))
-    controller.register("llm-server", start_llm_server, (event_stream,))
+    controller.register("comms-server", start_comms_server, (comms_port, event_stream))
+    controller.register("llm-server", start_llm_server, (ollama_port, event_stream))
 
 
-def start(port: int) -> None:
+def start(comms_port: int, ollama_port: int) -> None:
     """
     There are two parts to the core system: event_hooks and services.
 
@@ -51,12 +62,13 @@ def start(port: int) -> None:
 
     event_stream = AppEventStream(max_workers=5)
     controller = ThreadedServiceSetupController()
+    agent = Agent(event_stream=event_stream)
 
     # setup event hooks
-    setup_event_hooks(event_stream)
+    setup_event_hooks(event_stream, agent)
 
     # setup services
-    setup_services(controller, event_stream, port)
+    setup_services(controller, event_stream, comms_port, ollama_port)
 
     # add a SIGINT signal handler before starting persistent threads
     def shutdown_handler(sig, frame):
