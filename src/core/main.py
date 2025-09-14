@@ -1,10 +1,6 @@
 import signal
 import time
 
-from langchain_core.language_models import LanguageModelInput
-from langchain_core.messages import BaseMessage
-from langchain_core.runnables import Runnable
-
 from app_streams.events import (
     AppEventStream,
     SystemEvent,
@@ -22,14 +18,11 @@ from llm.agent import Agent
 from llm.server import start_llm_server
 
 
-def setup_event_hooks(
-    event_stream: AppEventStream,
-    agent: Runnable[LanguageModelInput, BaseMessage],
-) -> None:
+def setup_event_hooks(event_stream: AppEventStream, agent: Agent) -> None:
     """Setup event hooks for the event stream."""
     event_stream.add_event_hook(
         event_type=SystemEvent.type,
-        event_hook=lambda event: system_event_handler(event, event_stream),
+        event_hook=lambda event: system_event_handler(event, event_stream, agent),
     )
     event_stream.add_event_hook(
         event_type=SystemMessageEvent.type,
@@ -62,7 +55,9 @@ def start(comms_port: int, ollama_port: int) -> None:
 
     event_stream = AppEventStream(max_workers=5)
     controller = ThreadedServiceSetupController()
-    agent = Agent(event_stream=event_stream)
+    agent = Agent(
+        ollama_url=f"http://localhost:{ollama_port}", event_stream=event_stream
+    )
 
     # setup event hooks
     setup_event_hooks(event_stream, agent)

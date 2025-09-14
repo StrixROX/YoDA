@@ -30,8 +30,8 @@ class SystemEvent(AppEvent):
     CORE_SYS_FINISH = "Finished starting core systems."  # data: { [system_name]: bool }
     USR_REQ_SHUTDN = "System shutdown requested by user."  # data: None
 
-    COMMS_START = "Starting comms server..."  # data: string
-    COMMS_ONLINE = "Comms server online."  # data: string
+    COMMS_START = "Starting comms server..."  # data: str
+    COMMS_ONLINE = "Comms server online."  # data: str
     COMMS_OFFLINE = "Unable to start comms server."  # data: Exception
 
     USR_CONN_OK = "User connected to comms system."  # data: int
@@ -45,22 +45,22 @@ class SystemEvent(AppEvent):
         "System unable to speak."  # data: {"text_content": str, "error": Exception}
     )
 
-    LLM_START = "Starting LLM server..."  # data: string
-    LLM_ONLINE = "LLM server online."  # data: string
+    LLM_START = "Starting LLM server..."  # data: str
+    LLM_ONLINE = "LLM server online."  # data: str
     LLM_OFFLINE = "Unable to start LLM server."  # data: Exception
-    
-    AGENT_ONLINE = "Agent online." # data: string
-    AGENT_OFFLINE = "Agent offline." # data: Exception
+
+    AGENT_ONLINE = "Agent online."  # data: {url: str, session_id: str}
+    AGENT_OFFLINE = "Agent offline."  # data: Exception
 
     def __init__(self, message: str, data: any = None) -> None:
         super().__init__(self.type, message, data)
 
 
 class UserMessageEvent(AppEvent):
-    type = "user-message"
+    type = "user"
 
-    def __init__(self, message: str, data: any = None) -> None:
-        super().__init__(self.type, message, data)
+    def __init__(self, message: str, connection_id: int) -> None:
+        super().__init__(self.type, message, connection_id)
 
 
 class SystemMessageEvent(AppEvent):

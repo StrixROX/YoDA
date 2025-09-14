@@ -91,7 +91,7 @@ def handle_client(
                 dataBlock, buffer = buffer.split("\0", 1)
 
             if dataBlock:
-                event = UserMessageEvent(dataBlock)
+                event = UserMessageEvent(dataBlock, connection_id)
                 event_stream.push(event)
 
     event_stream.push(SystemEvent(SystemEvent.USR_DISCONN_OK, connection_id))
