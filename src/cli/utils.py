@@ -4,7 +4,7 @@ def greet(heading, subHeading):
     banner = text2art(heading, "sub-zero") if heading else None
     bannerWidth = banner.index("\n") if heading else None
 
-    greeting = "--- Welcome, you are! ---"
+    greeting = f"--- {subHeading} ---"
     paddedGreeting = f"{greeting:^{bannerWidth}}" if heading else greeting
 
     if banner:

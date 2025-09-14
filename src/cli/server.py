@@ -6,7 +6,7 @@ from core.main import start
 
 
 def start_core_systems(args: argparse.Namespace) -> None:
-    start(port=args.port)
+    start(comms_port=args.port_comms, ollama_port=args.port_ollama)
 
 
 def connect_to_core_systems(args: argparse.Namespace, callback: MethodType) -> None:
