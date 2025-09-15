@@ -4,7 +4,11 @@ import threading
 import time
 from typing import Union
 
-from cli.server import connect_to_core_systems, send_message_to_core_server
+from cli.server import (
+    connect_to_core_systems,
+    process_messages_from_core_server,
+    send_message_to_core_server,
+)
 from cli.utils import greet
 
 
@@ -47,7 +51,12 @@ def start_interactive_mode(args: argparse.Namespace) -> None:
         with _ssock:
             while True:
                 prompt = input("> ")
-
                 send_message_to_core_server(prompt, _ssock)
+                process_messages_from_core_server(handle_broadcast_messages, _ssock)
+
     except ssl.SSLEOFError:
         print("\n[Error] Comms server unavailable. Exiting...")
+
+
+def handle_broadcast_messages(message: str):
+    print("\n" + message + "\n")

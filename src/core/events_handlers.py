@@ -1,6 +1,4 @@
-from langchain_core.language_models import LanguageModelInput
-from langchain_core.messages import AIMessage, BaseMessage, ChatMessage
-from langchain_core.runnables import Runnable
+from langchain_core.messages import ChatMessage
 from app_streams.events import (
     AppEventStream,
     SystemEvent,
@@ -36,17 +34,18 @@ def system_message_handler(
     event: SystemMessageEvent,
     event_stream: AppEventStream,
 ) -> None:
-    # toaster = WindowsToaster("YoDA")
-    # newToast = Toast()
-    # newToast.text_fields = [event.message]
-    # toaster.show_toast(newToast)
-    print(event.message)
+    if "welcome!" in event.message.lower():  # welcome message
+        toaster = WindowsToaster("YoDA")
+        newToast = Toast()
+        newToast.text_fields = [event.message]
+        toaster.show_toast(newToast)
 
 
 # LLM calls on user input will go here
 def user_message_handler(
     event: UserMessageEvent, event_stream: AppEventStream, agent: Agent
 ) -> None:
+    connection_id = event.data
     session_id = agent.session_id
     config = {"configurable": {"thread_id": session_id}}
 
@@ -54,4 +53,5 @@ def user_message_handler(
         {"messages": [ChatMessage(role=UserMessageEvent.type, content=event.message)]},
         config,
     )
-    event_stream.push(SystemMessageEvent(response["messages"][-1].content))
+
+    event_stream.push(SystemMessageEvent(response["messages"][-1].content, connection_id))

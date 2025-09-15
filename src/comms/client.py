@@ -20,7 +20,3 @@ def connect_to_comms_server(
         error = e
 
     on_connect_callback(ssock=ssock, error=error)
-
-
-def pack_msg(msg) -> bytes:
-    return msg.encode() + b"\0"

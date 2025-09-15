@@ -3,7 +3,13 @@ import ssl
 import threading
 from types import MethodType
 
-from app_streams.events import AppEventStream, SystemEvent, UserMessageEvent
+from app_streams.events import (
+    AppEventStream,
+    SystemEvent,
+    SystemMessageEvent,
+    UserMessageEvent,
+)
+from comms.utils import pack_msg
 
 BUFFER_SIZE = 1024
 
@@ -59,24 +65,28 @@ def start_comms_server(
 
 
 def handle_client(
-    conn: ssl.SSLSocket,
+    client: ssl.SSLSocket,
     addr: tuple[str, int],
     event_stream: AppEventStream,
     shutdown_signal: threading.Event,
 ) -> None:
-    connection_id = hash(conn)
+    connection_id = hash(client)
 
-    event_stream.push(SystemEvent(SystemEvent.USR_CONN_OK, connection_id))
+    client.setblocking(False)
 
-    conn.setblocking(False)
+    with client:
+        event_stream.push(SystemEvent(SystemEvent.USR_CONN_OK, connection_id))
+        event_stream.add_event_hook(
+            SystemMessageEvent.type,
+            lambda event: system_message_event_hook(event, client, connection_id),
+        )
 
-    with conn:
         buffer = ""
 
         while not shutdown_signal.is_set():
             chunk = ""
             try:
-                chunk = conn.recv(BUFFER_SIZE).decode()
+                chunk = client.recv(BUFFER_SIZE).decode()
                 chunk = None if chunk == "" else chunk
             except ssl.SSLWantReadError:
                 pass
@@ -95,3 +105,10 @@ def handle_client(
                 event_stream.push(event)
 
     event_stream.push(SystemEvent(SystemEvent.USR_DISCONN_OK, connection_id))
+
+
+def system_message_event_hook(
+    event: SystemMessageEvent, client: ssl.SSLSocket, connection_id: int
+):
+    if event.data == connection_id or event.data == None:
+        client.send(pack_msg(event.message))
