@@ -39,6 +39,8 @@ def system_message_handler(
         newToast = Toast()
         newToast.text_fields = [event.message]
         toaster.show_toast(newToast)
+        
+        print(event.message)
 
 
 # LLM calls on user input will go here
