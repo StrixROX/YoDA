@@ -39,7 +39,7 @@ def system_message_handler(
         newToast = Toast()
         newToast.text_fields = [event.message]
         toaster.show_toast(newToast)
-        
+
         print(event.message)
 
 
@@ -52,8 +52,10 @@ def user_message_handler(
     config = {"configurable": {"thread_id": session_id}}
 
     response = agent.graph.invoke(
-        {"messages": [ChatMessage(role=UserMessageEvent.type, content=event.message)]},
+        {"messages": ChatMessage(role=UserMessageEvent.type, content=event.message)},
         config,
     )
 
-    event_stream.push(SystemMessageEvent(response["messages"][-1].content, connection_id))
+    event_stream.push(
+        SystemMessageEvent(response["messages"][-1].content, connection_id)
+    )

@@ -92,7 +92,9 @@ class Agent:
         graph_builder = StateGraph(AgentState)
 
         def chatbot(state: AgentState):
-            return {"messages": [self.llm.invoke(state["messages"])]}
+            response = self.llm.invoke(state["messages"])
+
+            return {"messages": state["messages"] + [response]}
 
         tools_node = ToolNode(tools=self.tools)
 
