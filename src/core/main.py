@@ -1,3 +1,4 @@
+import argparse
 import signal
 import time
 
@@ -45,13 +46,16 @@ def setup_services(
     controller.register("llm-server", start_llm_server, (ollama_port, event_stream))
 
 
-def start(comms_port: int, ollama_port: int) -> None:
+def start(args: argparse.Namespace) -> None:
     """
     There are two parts to the core system: event_hooks and services.
 
     event_hooks -> no startup logs. if these fail, the whole program exits.
     services -> startup logs are generated. if these fail, the program keeps running normally.
     """
+
+    comms_port = args.port_comms
+    ollama_port = args.port_ollama
 
     event_stream = AppEventStream(max_workers=5)
     controller = ThreadedServiceSetupController()
