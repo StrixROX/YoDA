@@ -1,7 +1,7 @@
 import argparse
 
 from .server import start_core_systems
-from cli.user_input import start_interactive_mode
+from .user_input import start_interactive_mode
 
 
 def main() -> None:
