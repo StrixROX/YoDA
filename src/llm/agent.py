@@ -1,16 +1,18 @@
 from datetime import datetime
 import random
-import time
+import threading
 from typing import Annotated, TypedDict
-from langchain_core.language_models import LanguageModelInput
-from langchain_core.messages import AIMessage, AnyMessage, BaseMessage, ChatMessage
-from langchain_core.runnables import Runnable
+from langchain_core.messages import (
+    AnyMessage,
+    BaseMessage,
+    ChatMessage,
+)
+from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.tools import tool
-from app_streams.events import AppEvent, AppEventStream, SystemEvent
+from app_streams.events import AppEventStream, SystemEvent
 from langchain_ollama.chat_models import ChatOllama
-from langgraph.graph import StateGraph, START, END
+from langgraph.graph import StateGraph, START
 from langgraph.graph.message import add_messages
-from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.prebuilt import ToolNode, tools_condition
 import secrets
 
@@ -19,6 +21,23 @@ AGENT_SESSION_ID_HEX_SIZE = 16
 
 class AgentState(TypedDict):
     messages: Annotated[list[AnyMessage], add_messages]
+
+
+class AgentSessionMemory:
+    def __init__(self) -> None:
+        self.lock = threading.Lock()
+        self._history: list[BaseMessage] = []
+
+    def get(self):
+        return [*self._history]
+
+    def update(self, messages: list[BaseMessage]) -> None:
+        print("-> about to update history")
+        with self.lock:
+            print("-> acquired lock")
+            self._history += messages
+            print("-> history updated. releasing lock...")
+        print("-> lock released")
 
 
 class Agent:
@@ -32,7 +51,7 @@ class Agent:
         self.llm = None
         self.tools = []
         self.graph = None
-        self.seconday_memory = InMemorySaver()
+        self.session_chat_history = AgentSessionMemory()  # secondary memory
 
     def setup(self):
         try:
@@ -54,7 +73,7 @@ class Agent:
         except Exception as err:
             if self.event_stream:
                 self.event_stream.push(SystemEvent(SystemEvent.AGENT_OFFLINE, err))
-            print(err)
+            print(err)  # temp
 
     def init_tools(self):
         @tool
@@ -82,7 +101,7 @@ class Agent:
             model="qwen3:8b",
             reasoning=False,
             base_url=self.ollama_url,
-            validate_model_on_init=True,
+            validate_model_on_init=False,
             temperature=0.2,
         )
 
@@ -91,8 +110,11 @@ class Agent:
     def init_stategraph(self):
         graph_builder = StateGraph(AgentState)
 
-        def chatbot(state: AgentState):
-            response = self.llm.invoke(state["messages"])
+        def chatbot(state: AgentState):            
+            prompt = ChatPromptTemplate.from_messages(state["messages"])
+            chain = prompt | self.llm
+            
+            response = chain.invoke({"messages": state["messages"]})
 
             return {"messages": state["messages"] + [response]}
 
@@ -105,6 +127,41 @@ class Agent:
         graph_builder.add_conditional_edges("chatbot", tools_condition)
         graph_builder.add_edge("tools", "chatbot")
 
-        graph = graph_builder.compile(checkpointer=self.seconday_memory)
+        graph = graph_builder.compile()
 
         self.graph = graph
+
+    def invoke(self, user_message: ChatMessage):
+        if not self.is_ready:
+            raise RuntimeError(
+                "Agent invoked before initialization. Did you forget to call the setup() method?"
+            )
+
+        memory = self.session_chat_history.get()
+        print(
+            "> querying against:",
+            list(map(lambda message: message.content, memory)),
+        )
+
+        output_state = self.graph.invoke({"messages": memory + [user_message]})
+        print(
+            "> agent returned:",
+            list(map(lambda state: state.content, output_state["messages"])),
+        )
+
+        new_messages = output_state["messages"][len(memory) :]
+        print(list(map(lambda msg: msg.content, new_messages)))
+
+        print("> memory write is locked?", self.session_chat_history.lock.locked())
+        self.session_chat_history.update(new_messages)
+        print(
+            "> new history:",
+            list(
+                map(
+                    lambda message: message.content,
+                    self.session_chat_history.get(),
+                )
+            ),
+        )
+
+        return new_messages[-1].content

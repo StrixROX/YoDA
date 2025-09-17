@@ -48,14 +48,9 @@ def user_message_handler(
     event: UserMessageEvent, event_stream: AppEventStream, agent: Agent
 ) -> None:
     connection_id = event.data
-    session_id = agent.session_id
-    config = {"configurable": {"thread_id": session_id}}
 
-    response = agent.graph.invoke(
-        {"messages": ChatMessage(role=UserMessageEvent.type, content=event.message)},
-        config,
+    response = agent.invoke(
+        ChatMessage(role=UserMessageEvent.type, content=event.message)
     )
 
-    event_stream.push(
-        SystemMessageEvent(response["messages"][-1].content, connection_id)
-    )
+    event_stream.push(SystemMessageEvent(response, connection_id))
