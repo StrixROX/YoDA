@@ -110,5 +110,8 @@ def handle_client(
 def system_message_event_hook(
     event: SystemMessageEvent, client: ssl.SSLSocket, connection_id: int
 ):
+    if "welcome!" in event.message.lower():
+        return
+
     if event.data == connection_id or event.data == None:
         client.send(pack_msg(event.message))
