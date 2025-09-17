@@ -1,3 +1,4 @@
+import signal
 import threading
 import time
 from types import MethodType
@@ -39,6 +40,12 @@ def show_loading_text(loading_text="Loading") -> MethodType:
         nonlocal is_process_complete
         is_process_complete.set()
         print_text_thread.join()
+
+    def on_user_interrupt(sig, frame):
+        stop()
+        raise KeyboardInterrupt()
+
+    signal.signal(signal.SIGINT, on_user_interrupt)
 
     print_text_thread.start()
 
