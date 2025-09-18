@@ -46,7 +46,7 @@ def setup_services(
     controller.register("llm-server", start_llm_server, (ollama_port, event_stream))
 
 
-def start(args: argparse.Namespace) -> None:
+def start_core_system(args: argparse.Namespace) -> None:
     """
     There are two parts to the core system: event_hooks and services.
 
