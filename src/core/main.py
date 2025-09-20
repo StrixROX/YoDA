@@ -4,6 +4,8 @@ import signal
 import threading
 import time
 
+from langchain_core.messages import ChatMessage
+
 from app_streams.events import (
     AppEventStream,
     SystemEvent,
@@ -20,6 +22,7 @@ from core.events_handlers import (
 from core.services import CommsServer
 from core.services.llm_server import OllamaServer
 from core.utils import poll_and_wait_for
+
 from llm.agent import Agent
 
 
@@ -98,21 +101,30 @@ def start_core_system(args: argparse.Namespace) -> None:
     thread_pool_executor = ThreadPoolExecutor(max_workers=16)
     event_stream = AppEventStream(thread_pool_executor)
 
-    event_stream.add_event_hook("all", print)
+    # event_stream.add_event_hook("all", print)
 
     comms_server, llm_server = setup_services(
         args, event_stream, shutdown_signal, thread_pool_executor
     )
 
-    # agent = Agent(
-    #     ollama_url=llm_server.get_server_url(),
-    #     event_stream=event_stream,
-    # )
+    agent = Agent(
+        ollama_url=llm_server.get_server_url(),
+        event_stream=event_stream,
+        shutdown_signal=shutdown_signal,
+    )
 
     def on_user_message(event: UserMessageEvent):
-        comms_server.get_connection_by_id(event.data).sendall(
-            pack_msg("responding to: " + event.message)
-        )
+        try:
+            response = agent.invoke(
+                ChatMessage(role=UserMessageEvent.type, content=event.message)
+            )
+
+            comms_server.get_connection_by_id(event.data).send(pack_msg(response))
+            # comms_server.get_connection_by_id(event.data).sendall(
+            #     pack_msg("responding to: " + event.message)
+            # )
+        except Exception as e:
+            print(e)
 
     event_stream.add_event_hook(UserMessageEvent.type, on_user_message)
 
