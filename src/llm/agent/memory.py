@@ -12,9 +12,9 @@ class AgentSessionMemory:
         return [*self._history]
 
     def update(self, messages: list[BaseMessage]) -> None:
-        print("-> about to update history")
+        # print("-> about to update history")
         with self.lock:
-            print("-> acquired lock")
+            # print("-> acquired lock")
             self._history += messages
-            print("-> history updated. releasing lock...")
-        print("-> lock released")
+            # print("-> history updated. releasing lock...")
+        # print("-> lock released")

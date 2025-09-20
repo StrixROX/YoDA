@@ -7,17 +7,14 @@ from app_streams.events import (
 )
 from windows_toasts import WindowsToaster, Toast
 
+from comms.utils import pack_msg
+from core.services import CommsServer
 from llm.agent import Agent
 
 
-# LLM calls on system events will go here
-def system_event_handler(
-    event: SystemEvent, event_stream: AppEventStream, agent: Agent
-) -> None:
-    if event.message == SystemEvent.LLM_ONLINE:
-        agent.setup()
+def on_core_system_ready(event: SystemEvent, event_stream: AppEventStream):
 
-    elif event.message == SystemEvent.CORE_SYS_FINISH:
+    if event.message == SystemEvent.CORE_SYS_FINISH:
         core_systems_status = event.data
 
         startup_greeting = (
@@ -26,31 +23,45 @@ def system_event_handler(
             else "Welcome! Some core systems are offline."
         )
 
-        event_stream.push(SystemMessageEvent(startup_greeting))
-
-
-# TTS/GUI Render calls will go here
-def system_message_handler(
-    event: SystemMessageEvent,
-    event_stream: AppEventStream,
-) -> None:
-    if "welcome!" in event.message.lower():  # welcome message
         toaster = WindowsToaster("YoDA")
         newToast = Toast()
         newToast.text_fields = [event.message]
         toaster.show_toast(newToast)
 
-        print(event.message)
+        print(startup_greeting)
+
+        event_stream.push(SystemMessageEvent(startup_greeting))
+
+    elif event.message in [
+        SystemEvent.COMMS_ONLINE,
+        SystemEvent.COMMS_OFFLINE,
+        SystemEvent.LLM_ONLINE,
+        SystemEvent.LLM_OFFLINE,
+        SystemEvent.AGENT_ONLINE,
+        SystemEvent.AGENT_OFFLINE,
+    ]:
+        print(f"[ {event.message} ]")
+    elif event.message in [
+        SystemEvent.USR_CONN_OK,
+        SystemEvent.USR_DISCONN_OK,
+    ]:
+        print(f"[ {event.data} ] {event.message}")
 
 
-# LLM calls on user input will go here
-def user_message_handler(
-    event: UserMessageEvent, event_stream: AppEventStream, agent: Agent
-) -> None:
-    connection_id = event.data
+def on_user_message(
+    event: UserMessageEvent,
+    event_stream: AppEventStream,
+    comms_server: CommsServer,
+    agent: Agent,
+):
+    try:
+        connection_id = event.data
 
-    response = agent.invoke(
-        ChatMessage(role=UserMessageEvent.type, content=event.message)
-    )
+        response = agent.invoke(
+            ChatMessage(role=UserMessageEvent.type, content=event.message)
+        )
 
-    event_stream.push(SystemMessageEvent(response, connection_id))
+        comms_server.get_connection_by_id(event.data).send(pack_msg(response))
+        event_stream.push(SystemMessageEvent(response, connection_id))
+    except Exception as e:
+        print(e)

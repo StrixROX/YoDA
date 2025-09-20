@@ -5,6 +5,7 @@ from langchain_core.messages import ChatMessage
 from langchain_ollama.chat_models import ChatOllama
 
 from app_streams.events import AppEventStream, SystemEvent
+from core.services import OllamaServer
 from llm.agent.graph import create_graph
 from llm.agent.memory import AgentSessionMemory
 from .tools import available_tools
@@ -15,19 +16,22 @@ AGENT_SESSION_ID_HEX_SIZE = 16
 class Agent:
     def __init__(
         self,
-        ollama_url: str,
+        llm_server: OllamaServer,
         event_stream: AppEventStream,
         shutdown_signal: threading.Event,
     ) -> None:
         self.is_ready = threading.Event()
 
-        self.__ollama_url = ollama_url
+        self.__ollama_url = llm_server.get_server_url()
         self.__event_stream = event_stream
         self.__shutdown_signal = shutdown_signal
 
         self.session_id = secrets.token_hex(AGENT_SESSION_ID_HEX_SIZE)
 
-        self.__start()
+        if llm_server.is_ready.is_set():
+            self.__start()
+        else:
+            self.__on_error(Exception(RuntimeError("Ollama server unavailable.")))
 
     def __start(self) -> None:
         try:
@@ -47,19 +51,24 @@ class Agent:
             # init workflow
             self.__graph = create_graph(llm=self.__llm, tools=self.__tools)
 
-            self.__event_stream.push(
-                SystemEvent(
-                    SystemEvent.AGENT_ONLINE,
-                    {"url": self.__ollama_url, "session_id": self.session_id},
-                )
-            )
-
-            self.is_ready.set()
+            self.__on_ready()
 
         except Exception as err:
-            if self.__event_stream:
-                self.__event_stream.push(SystemEvent(SystemEvent.AGENT_OFFLINE, err))
-            print(err)  # temp
+            self.__on_error(err)
+
+    def __on_ready(self):
+        self.is_ready.set()
+
+        self.__event_stream.push(
+            SystemEvent(
+                SystemEvent.AGENT_ONLINE,
+                {"url": self.__ollama_url, "session_id": self.session_id},
+            )
+        )
+
+    def __on_error(self, err: Exception):
+        self.__event_stream.push(SystemEvent(SystemEvent.AGENT_OFFLINE, err))
+        print(err)  # temp
 
     def invoke(self, user_message: ChatMessage) -> str:
         if not self.is_ready.is_set():
