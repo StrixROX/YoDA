@@ -10,33 +10,33 @@ def start_interactive_mode(args: argparse.Namespace) -> None:
 
     stop_loading_text = show_loading_text("Securely connecting to comms server")
 
-    ssock = connect_to_comms_server(
-        port=args.port, on_complete_callback=stop_loading_text
-    )[0]
-
-    if ssock:
-        try:
-            with ssock:
-                print("- Comms server connected\n")
-
-                on_server_connected(ssock)
-
-        except ssl.SSLEOFError:
-            print("\n[Error] Comms server unavailable. Exiting...")
-    else:
-        print(
+    connect_to_comms_server(
+        hostname="localhost",
+        port=args.port,
+        on_done=stop_loading_text,
+        on_connect=on_server_connected,
+        on_error=lambda err: print(
             "[Error] Unable to connect to comms server. Did you forget to start the comms server?\n"
-        )
+        ),
+    )
 
 
 def on_server_connected(ssock: ssl.SSLSocket):
-    def on_response(message: str):
-        print(f"\n{message}\n")
+    try:
+        with ssock:
+            print("- Comms server connected\n")
 
-    while True:
-        prompt = input("> ").strip()
-        if prompt == "":
-            continue
+            socket_buffer = ""
 
-        send_message(ssock, prompt)
-        listen_for_messages(ssock, on_response)
+            while True:
+                prompt = input("> ").strip()
+                if prompt == "":
+                    continue
+
+                send_message(ssock, prompt)
+                message, socket_buffer = listen_for_messages(ssock, socket_buffer)
+
+                print(f"\n{message}\n")
+
+    except ssl.SSLEOFError:
+        print("\n[Error] Comms server unavailable. Exiting...")

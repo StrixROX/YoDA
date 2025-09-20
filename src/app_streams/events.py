@@ -73,11 +73,13 @@ class SystemMessageEvent(AppEvent):
 class AppEventStream:
     DEFAULT_DUMP_FILENAME = "temp/AppEventStream_history.log"
 
-    def __init__(self, max_workers=5, history_maxsize=None) -> None:
+    def __init__(
+        self, thread_pool_executor: ThreadPoolExecutor, history_maxsize=None
+    ) -> None:
         self.__event_hooks: Dict[str, Dict[int, Callable[[AppEvent], None]]] = dict(
             {"all": dict()}
         )
-        self.__executor = ThreadPoolExecutor(max_workers=max_workers)
+        self.__executor = thread_pool_executor
         self.history = deque(maxlen=history_maxsize)
 
     # If you truly know that:

@@ -30,7 +30,7 @@ def show_loading_text(loading_text="Loading") -> MethodType:
         while not is_process_complete.is_set():
             dots = "." * (i % 4) + " " * (3 - i % 4)
             print("\r" + loading_text + dots, end="", flush=True)
-            time.sleep(0.5)
+            time.sleep(0.3)
             i += 1
         print("\033[2K\r", end="", flush=True)  # clear "Loading..." line
 
