@@ -87,10 +87,17 @@ class CommsServer:
         def on_client_connected():
             socket_buffer = ""
 
-            while not self.__shutdown_signal.is_set():
-                print(socket_buffer)
-                message, socket_buffer = listen_for_messages(client, socket_buffer)
-                self.__event_stream.push(UserMessageEvent(message, connection_id))
+            try:
+                while not self.__shutdown_signal.is_set():
+                    message, socket_buffer = listen_for_messages(client, socket_buffer)
+                    self.__event_stream.push(UserMessageEvent(message, connection_id))
+            except (
+                ValueError
+            ):  # if socket has disconnected, this error is raised by listen_for_messages
+                client.close()
+                self.__event_stream.push(
+                    SystemEvent(SystemEvent.USR_DISCONN_OK, connection_id)
+                )
 
         self.__thread_pool_executor.submit(on_client_connected)
 

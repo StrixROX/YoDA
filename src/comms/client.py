@@ -46,10 +46,7 @@ def listen_for_messages(ssock: ssl.SSLSocket, init_buffer: str = "") -> Tuple[st
 
     ssock.setblocking(True)
 
-    while True:
-        if "\0" in buffer:
-            break
-
+    while "\0" not in buffer:
         chunk = ""
 
         try:
