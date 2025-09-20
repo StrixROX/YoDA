@@ -91,10 +91,13 @@ class CommsServer:
                 while not self.__shutdown_signal.is_set():
                     message, socket_buffer = listen_for_messages(client, socket_buffer)
                     self.__event_stream.push(UserMessageEvent(message, connection_id))
-            except (
-                ValueError
-            ):  # if socket has disconnected, this error is raised by listen_for_messages
+            except ValueError:
+                # if socket has disconnected, this error is raised by listen_for_messages
                 client.close()
+
+                with self.__lock:
+                    del self.__connections[connection_id]
+
                 self.__event_stream.push(
                     SystemEvent(SystemEvent.USR_DISCONN_OK, connection_id)
                 )
