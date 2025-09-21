@@ -79,7 +79,6 @@ class Agent:
     def append_to_session_memory(self, messages: list[AppEvent] | list[BaseMessage]):
         parsed_messages = []
         for message in messages:
-            # print(isinstance(message, BaseMessage), isinstance(message, AppEvent))
             if isinstance(message, BaseMessage):
                 parsed_messages.append(message)
             elif isinstance(message, AppEvent):
