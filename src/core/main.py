@@ -15,6 +15,7 @@ from app_streams.events import (
 )
 from core.events_handlers import (
     on_core_system_ready,
+    on_system_event,
     on_user_message,
 )
 
@@ -50,6 +51,8 @@ def start_core_system(args: argparse.Namespace) -> None:
     comms_server, llm_server, agent = setup_services(
         args, event_stream, shutdown_signal, thread_pool_executor
     )
+
+    agent.append_to_session_memory(list(event_stream.history))
 
     setup_event_hooks(
         event_stream=event_stream,
@@ -135,4 +138,9 @@ def setup_event_hooks(
         event_hook=lambda event: on_user_message(
             event, event_stream, comms_server, agent
         ),
+    )
+
+    event_stream.add_event_hook(
+        event_type=SystemEvent.type,
+        event_hook=lambda event: on_system_event(event, agent),
     )

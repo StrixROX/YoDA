@@ -23,7 +23,6 @@ from llm.agent import Agent
 
 
 def on_core_system_ready(event: SystemEvent, event_stream: AppEventStream):
-
     if event.message == CORE_SYS_FINISH:
         core_systems_status = event.data
 
@@ -59,6 +58,10 @@ def on_core_system_ready(event: SystemEvent, event_stream: AppEventStream):
         print(f"[ {connection_id} ] {event.message}")
     elif event.message == USR_REQ_SHUTDN:
         print(event.message)
+
+
+def on_system_event(event: SystemEvent, agent: Agent):
+    agent.append_to_session_memory([event])
 
 
 def on_user_message(

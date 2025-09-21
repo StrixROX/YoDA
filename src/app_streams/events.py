@@ -51,7 +51,7 @@ class AppEvent:
         self.timestamp = dt.now().timestamp()
 
     def __str__(self) -> str:
-        return f"<AppEvent created_on=({dt.fromtimestamp(self.timestamp).isoformat()}) type=('{self.type}') message=('{self.message}') data=({repr(self.data)})>"
+        return f"<{self.__class__.__name__} created_on=({dt.fromtimestamp(self.timestamp).isoformat()}) type=('{self.type}') message=('{self.message}') data=({repr(self.data)})>"
 
 
 class SystemEvent(AppEvent):

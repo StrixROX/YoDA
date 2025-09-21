@@ -1,10 +1,16 @@
 import secrets
 import threading
 
-from langchain_core.messages import ChatMessage
+from langchain_core.messages import BaseMessage, ChatMessage
 from langchain_ollama.chat_models import ChatOllama
 
-from app_streams.events import AGENT_OFFLINE, AGENT_ONLINE, AppEventStream, SystemEvent
+from app_streams.events import (
+    AGENT_OFFLINE,
+    AGENT_ONLINE,
+    AppEvent,
+    AppEventStream,
+    SystemEvent,
+)
 from core.services import OllamaServer
 from llm.agent.graph import create_graph
 from llm.agent.memory import AgentSessionMemory
@@ -69,6 +75,19 @@ class Agent:
     def __on_error(self, err: Exception):
         self.__event_stream.push(SystemEvent(AGENT_OFFLINE, {"error": err}))
         print(err)  # temp
+
+    def append_to_session_memory(self, messages: list[AppEvent] | list[BaseMessage]):
+        parsed_messages = []
+        for message in messages:
+            # print(isinstance(message, BaseMessage), isinstance(message, AppEvent))
+            if isinstance(message, BaseMessage):
+                parsed_messages.append(message)
+            elif isinstance(message, AppEvent):
+                parsed_messages.append(
+                    ChatMessage(role=message.type, content=str(message))
+                )
+
+        self.__session_chat_history.update(parsed_messages)
 
     def invoke(self, user_message: ChatMessage) -> str:
         if not self.is_ready.is_set():
