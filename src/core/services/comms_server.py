@@ -43,7 +43,10 @@ class CommsServer:
 
     def __start(self) -> None:
         self.__event_stream.push(
-            SystemEvent(COMMS_START, (self.hostname, self.port))
+            SystemEvent(
+                COMMS_START,
+                {"server_hostname": (self.hostname), "server_port": self.port},
+            )
         )
 
         start_server(
@@ -61,12 +64,15 @@ class CommsServer:
         self.ssock = ssock
         self.is_ready.set()
         self.__event_stream.push(
-            SystemEvent(COMMS_ONLINE, (self.hostname, self.port))
+            SystemEvent(
+                COMMS_ONLINE,
+                {"server_hostname": (self.hostname), "server_port": self.port},
+            )
         )
         self.__listen_for_connections()
 
     def __on_error(self, err: Exception) -> None:
-        self.__event_stream.push(SystemEvent(COMMS_OFFLINE, err))
+        self.__event_stream.push(SystemEvent(COMMS_OFFLINE, {"error": err}))
 
     def __listen_for_connections(self) -> None:
         try:
@@ -88,7 +94,9 @@ class CommsServer:
         with self.__lock:
             self.__connections[connection_id] = client
 
-        self.__event_stream.push(SystemEvent(USR_CONN_OK, connection_id))
+        self.__event_stream.push(
+            SystemEvent(USR_CONN_OK, {"connection_id": connection_id})
+        )
 
         def on_client_connected():
             socket_buffer = ""
@@ -105,7 +113,7 @@ class CommsServer:
                     del self.__connections[connection_id]
 
                 self.__event_stream.push(
-                    SystemEvent(USR_DISCONN_OK, connection_id)
+                    SystemEvent(USR_DISCONN_OK, {"connection_id": connection_id})
                 )
 
         self.__thread_pool_executor.submit(on_client_connected)

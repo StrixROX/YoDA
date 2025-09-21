@@ -32,7 +32,9 @@ class OllamaServer:
     def __start(self) -> None:
         ollama_server_url = self.get_server_url()
 
-        self.__event_stream.push(SystemEvent(LLM_START, ollama_server_url))
+        self.__event_stream.push(
+            SystemEvent(LLM_START, {"server_url": ollama_server_url})
+        )
 
         is_server_already_running = get_is_ollama_server_running(
             base_url=ollama_server_url
@@ -54,7 +56,9 @@ class OllamaServer:
     def __on_start(self, process: subprocess.Popen) -> None:
         self.process = process
 
-        self.__event_stream.push(SystemEvent(LLM_ONLINE, self.get_server_url()))
+        self.__event_stream.push(
+            SystemEvent(LLM_ONLINE, {"server_url": self.get_server_url()})
+        )
         self.is_ready.set()
 
         if self.process is not None:
@@ -63,7 +67,7 @@ class OllamaServer:
             self.close()
 
     def __on_error(self, err: Exception) -> None:
-        self.__event_stream.push(SystemEvent(LLM_OFFLINE, err))
+        self.__event_stream.push(SystemEvent(LLM_OFFLINE, {"error": err}))
 
     def close(self) -> None:
         if (

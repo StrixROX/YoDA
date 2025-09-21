@@ -62,12 +62,12 @@ class Agent:
         self.__event_stream.push(
             SystemEvent(
                 AGENT_ONLINE,
-                {"url": self.__ollama_url, "session_id": self.session_id},
+                {"ollama_url": self.__ollama_url, "session_id": self.session_id},
             )
         )
 
     def __on_error(self, err: Exception):
-        self.__event_stream.push(SystemEvent(AGENT_OFFLINE, err))
+        self.__event_stream.push(SystemEvent(AGENT_OFFLINE, {"error": err}))
         print(err)  # temp
 
     def invoke(self, user_message: ChatMessage) -> str:

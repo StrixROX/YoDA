@@ -5,31 +5,36 @@ import os
 from typing import Dict
 from concurrent.futures import ThreadPoolExecutor
 
-CORE_SYS_START = "Starting core systems..."  # data: { [system_name]: bool }
-CORE_SYS_FINISH = "Finished starting core systems."  # data: { [system_name]: bool }
+# All system event messages
+CORE_SYS_START = (
+    "Starting core systems..."  # data: {"active_services": {[system_name]: bool}}
+)
+CORE_SYS_FINISH = "Finished starting core systems."  # data: {"active_services": {[system_name]: bool}}
 USR_REQ_SHUTDN = "System shutdown requested by user."  # data: None
 
-COMMS_START = "Starting comms server..."  # data: str
-COMMS_ONLINE = "Comms server online."  # data: str
-COMMS_OFFLINE = "Unable to start comms server."  # data: Exception
-
-USR_CONN_OK = "User connected to comms system."  # data: int
-USR_DISCONN_OK = "User disconnected from comms system."  # data: int
-USR_DISCONN_ABT = (
-    "User disconnected from comms system. Connection aborted."  # data: None
+COMMS_START = (
+    "Starting comms server..."  # data: {"server_hostname": str, "server_port": int}
 )
+COMMS_ONLINE = (
+    "Comms server online."  # data: {"server_hostname": str, "server_port": int},
+)
+COMMS_OFFLINE = "Unable to start comms server."  # data: {"error": Exception}
+
+USR_CONN_OK = "User connected to comms system."  # data: {"connection_id": int}
+USR_DISCONN_OK = "User disconnected from comms system."  # data: {"connection_id": int}
+USR_DISCONN_ABT = "User disconnected from comms system. Connection aborted."  # data: {}
 
 SYS_SPEAK_OK = "System completed speaking."  # data: str
 SYS_SPEAK_ERR = (
     "System unable to speak."  # data: {"text_content": str, "error": Exception}
 )
 
-LLM_START = "Starting LLM server..."  # data: str
-LLM_ONLINE = "LLM server online."  # data: str
-LLM_OFFLINE = "Unable to start LLM server."  # data: Exception
+LLM_START = "Starting LLM server..."  # data: {"server_url": str}
+LLM_ONLINE = "LLM server online."  # data: {"server_url": str}
+LLM_OFFLINE = "Unable to start LLM server."  # data: {"error": Exception}
 
-AGENT_ONLINE = "Agent online."  # data: {url: str, session_id: str}
-AGENT_OFFLINE = "Agent offline."  # data: Exception
+AGENT_ONLINE = "Agent online."  # data: {"ollama_url": str, "session_id": str}
+AGENT_OFFLINE = "Agent offline."  # data: {"error": Exception}
 
 
 class AppEvent:
@@ -50,7 +55,7 @@ class AppEvent:
 
 
 class SystemEvent(AppEvent):
-    type = "system-event"
+    type = "system"
 
     def __init__(self, message: str, data: any = None) -> None:
         super().__init__(self.type, message, data)
@@ -63,8 +68,8 @@ class UserMessageEvent(AppEvent):
         super().__init__(self.type, message, connection_id)
 
 
-class SystemMessageEvent(AppEvent):
-    type = "system-message"
+class AgentMessageEvent(AppEvent):
+    type = "assistant"
 
     def __init__(self, message: str, data: any = None) -> None:
         super().__init__(self.type, message, data)
@@ -141,9 +146,6 @@ class AppEventStream:
             )
 
         del event_hooks_for_type[event_hook_id]
-
-    def close(self):
-        self.__executor.shutdown()
 
     def dump(self, dump_filename=DEFAULT_DUMP_FILENAME):
         os.makedirs(os.path.dirname(dump_filename), exist_ok=True)

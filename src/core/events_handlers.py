@@ -9,9 +9,10 @@ from app_streams.events import (
     LLM_ONLINE,
     USR_CONN_OK,
     USR_DISCONN_OK,
+    USR_REQ_SHUTDN,
     AppEventStream,
     SystemEvent,
-    SystemMessageEvent,
+    AgentMessageEvent,
     UserMessageEvent,
 )
 from windows_toasts import WindowsToaster, Toast
@@ -39,7 +40,7 @@ def on_core_system_ready(event: SystemEvent, event_stream: AppEventStream):
 
         print(startup_greeting)
 
-        event_stream.push(SystemMessageEvent(startup_greeting))
+        event_stream.push(AgentMessageEvent(startup_greeting, -1))
 
     elif event.message in [
         COMMS_ONLINE,
@@ -54,7 +55,10 @@ def on_core_system_ready(event: SystemEvent, event_stream: AppEventStream):
         USR_CONN_OK,
         USR_DISCONN_OK,
     ]:
-        print(f"[ {event.data} ] {event.message}")
+        connection_id = event.data["connection_id"]
+        print(f"[ {connection_id} ] {event.message}")
+    elif event.message == USR_REQ_SHUTDN:
+        print(event.message)
 
 
 def on_user_message(
@@ -71,6 +75,6 @@ def on_user_message(
         )
 
         comms_server.get_connection_by_id(event.data).send(pack_msg(response))
-        event_stream.push(SystemMessageEvent(response, connection_id))
+        event_stream.push(AgentMessageEvent(response, connection_id))
     except Exception as e:
         print(e)
