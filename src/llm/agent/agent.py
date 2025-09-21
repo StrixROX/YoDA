@@ -4,7 +4,7 @@ import threading
 from langchain_core.messages import ChatMessage
 from langchain_ollama.chat_models import ChatOllama
 
-from app_streams.events import AppEventStream, SystemEvent
+from app_streams.events import AGENT_OFFLINE, AGENT_ONLINE, AppEventStream, SystemEvent
 from core.services import OllamaServer
 from llm.agent.graph import create_graph
 from llm.agent.memory import AgentSessionMemory
@@ -61,13 +61,13 @@ class Agent:
 
         self.__event_stream.push(
             SystemEvent(
-                SystemEvent.AGENT_ONLINE,
+                AGENT_ONLINE,
                 {"url": self.__ollama_url, "session_id": self.session_id},
             )
         )
 
     def __on_error(self, err: Exception):
-        self.__event_stream.push(SystemEvent(SystemEvent.AGENT_OFFLINE, err))
+        self.__event_stream.push(SystemEvent(AGENT_OFFLINE, err))
         print(err)  # temp
 
     def invoke(self, user_message: ChatMessage) -> str:

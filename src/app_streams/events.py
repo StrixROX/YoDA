@@ -5,6 +5,32 @@ import os
 from typing import Dict
 from concurrent.futures import ThreadPoolExecutor
 
+CORE_SYS_START = "Starting core systems..."  # data: { [system_name]: bool }
+CORE_SYS_FINISH = "Finished starting core systems."  # data: { [system_name]: bool }
+USR_REQ_SHUTDN = "System shutdown requested by user."  # data: None
+
+COMMS_START = "Starting comms server..."  # data: str
+COMMS_ONLINE = "Comms server online."  # data: str
+COMMS_OFFLINE = "Unable to start comms server."  # data: Exception
+
+USR_CONN_OK = "User connected to comms system."  # data: int
+USR_DISCONN_OK = "User disconnected from comms system."  # data: int
+USR_DISCONN_ABT = (
+    "User disconnected from comms system. Connection aborted."  # data: None
+)
+
+SYS_SPEAK_OK = "System completed speaking."  # data: str
+SYS_SPEAK_ERR = (
+    "System unable to speak."  # data: {"text_content": str, "error": Exception}
+)
+
+LLM_START = "Starting LLM server..."  # data: str
+LLM_ONLINE = "LLM server online."  # data: str
+LLM_OFFLINE = "Unable to start LLM server."  # data: Exception
+
+AGENT_ONLINE = "Agent online."  # data: {url: str, session_id: str}
+AGENT_OFFLINE = "Agent offline."  # data: Exception
+
 
 class AppEvent:
     def __init__(self, type: str, message: str, data: any = None) -> None:
@@ -25,32 +51,6 @@ class AppEvent:
 
 class SystemEvent(AppEvent):
     type = "system-event"
-
-    CORE_SYS_START = "Starting core systems..."  # data: { [system_name]: bool }
-    CORE_SYS_FINISH = "Finished starting core systems."  # data: { [system_name]: bool }
-    USR_REQ_SHUTDN = "System shutdown requested by user."  # data: None
-
-    COMMS_START = "Starting comms server..."  # data: str
-    COMMS_ONLINE = "Comms server online."  # data: str
-    COMMS_OFFLINE = "Unable to start comms server."  # data: Exception
-
-    USR_CONN_OK = "User connected to comms system."  # data: int
-    USR_DISCONN_OK = "User disconnected from comms system."  # data: int
-    USR_DISCONN_ABT = (
-        "User disconnected from comms system. Connection aborted."  # data: None
-    )
-
-    SYS_SPEAK_OK = "System completed speaking."  # data: str
-    SYS_SPEAK_ERR = (
-        "System unable to speak."  # data: {"text_content": str, "error": Exception}
-    )
-
-    LLM_START = "Starting LLM server..."  # data: str
-    LLM_ONLINE = "LLM server online."  # data: str
-    LLM_OFFLINE = "Unable to start LLM server."  # data: Exception
-
-    AGENT_ONLINE = "Agent online."  # data: {url: str, session_id: str}
-    AGENT_OFFLINE = "Agent offline."  # data: Exception
 
     def __init__(self, message: str, data: any = None) -> None:
         super().__init__(self.type, message, data)

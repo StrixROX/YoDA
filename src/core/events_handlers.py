@@ -1,5 +1,14 @@
 from langchain_core.messages import ChatMessage
 from app_streams.events import (
+    AGENT_OFFLINE,
+    AGENT_ONLINE,
+    COMMS_OFFLINE,
+    COMMS_ONLINE,
+    CORE_SYS_FINISH,
+    LLM_OFFLINE,
+    LLM_ONLINE,
+    USR_CONN_OK,
+    USR_DISCONN_OK,
     AppEventStream,
     SystemEvent,
     SystemMessageEvent,
@@ -14,7 +23,7 @@ from llm.agent import Agent
 
 def on_core_system_ready(event: SystemEvent, event_stream: AppEventStream):
 
-    if event.message == SystemEvent.CORE_SYS_FINISH:
+    if event.message == CORE_SYS_FINISH:
         core_systems_status = event.data
 
         startup_greeting = (
@@ -33,17 +42,17 @@ def on_core_system_ready(event: SystemEvent, event_stream: AppEventStream):
         event_stream.push(SystemMessageEvent(startup_greeting))
 
     elif event.message in [
-        SystemEvent.COMMS_ONLINE,
-        SystemEvent.COMMS_OFFLINE,
-        SystemEvent.LLM_ONLINE,
-        SystemEvent.LLM_OFFLINE,
-        SystemEvent.AGENT_ONLINE,
-        SystemEvent.AGENT_OFFLINE,
+        COMMS_ONLINE,
+        COMMS_OFFLINE,
+        LLM_ONLINE,
+        LLM_OFFLINE,
+        AGENT_ONLINE,
+        AGENT_OFFLINE,
     ]:
         print(f"[ {event.message} ]")
     elif event.message in [
-        SystemEvent.USR_CONN_OK,
-        SystemEvent.USR_DISCONN_OK,
+        USR_CONN_OK,
+        USR_DISCONN_OK,
     ]:
         print(f"[ {event.data} ] {event.message}")
 

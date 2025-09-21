@@ -6,6 +6,9 @@ import time
 
 
 from app_streams.events import (
+    CORE_SYS_FINISH,
+    CORE_SYS_START,
+    USR_REQ_SHUTDN,
     AppEventStream,
     SystemEvent,
     UserMessageEvent,
@@ -35,7 +38,7 @@ def start_core_system(args: argparse.Namespace) -> None:
 
     def shutdown_handler(sig, frame):
         shutdown_signal.set()
-        event_stream.push(SystemEvent(SystemEvent.USR_REQ_SHUTDN))
+        event_stream.push(SystemEvent(USR_REQ_SHUTDN))
 
     signal.signal(signal.SIGINT, shutdown_handler)
 
@@ -79,7 +82,7 @@ def setup_services(
         "agent": False,
     }
 
-    event_stream.push(SystemEvent(SystemEvent.CORE_SYS_START, status))
+    event_stream.push(SystemEvent(CORE_SYS_START, status))
 
     comms_server = CommsServer(
         port=args.port_comms,
@@ -107,7 +110,7 @@ def setup_services(
     status["llm-server"] = llm_server.is_ready.is_set()
     status["agent"] = agent.is_ready.is_set()
 
-    event_stream.push(SystemEvent(SystemEvent.CORE_SYS_FINISH, status))
+    event_stream.push(SystemEvent(CORE_SYS_FINISH, status))
 
     return comms_server, llm_server, agent
 

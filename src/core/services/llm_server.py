@@ -1,7 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
 import subprocess
 import threading
-from app_streams.events import AppEvent, SystemEvent
+from app_streams.events import LLM_OFFLINE, LLM_ONLINE, LLM_START, AppEvent, SystemEvent
 from llm.server import get_is_ollama_server_running, start_ollama_server
 
 
@@ -32,7 +32,7 @@ class OllamaServer:
     def __start(self) -> None:
         ollama_server_url = self.get_server_url()
 
-        self.__event_stream.push(SystemEvent(SystemEvent.LLM_START, ollama_server_url))
+        self.__event_stream.push(SystemEvent(LLM_START, ollama_server_url))
 
         is_server_already_running = get_is_ollama_server_running(
             base_url=ollama_server_url
@@ -55,7 +55,7 @@ class OllamaServer:
         self.process = process
 
         self.__event_stream.push(
-            SystemEvent(SystemEvent.LLM_ONLINE, self.get_server_url())
+            SystemEvent(LLM_ONLINE, self.get_server_url())
         )
         self.is_ready.set()
 
@@ -65,7 +65,7 @@ class OllamaServer:
             self.close()
 
     def __on_error(self, err: Exception) -> None:
-        self.__event_stream.push(SystemEvent(SystemEvent.LLM_OFFLINE, err))
+        self.__event_stream.push(SystemEvent(LLM_OFFLINE, err))
 
     def close(self) -> None:
         if (

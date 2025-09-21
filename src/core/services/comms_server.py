@@ -3,6 +3,12 @@ import ssl
 import threading
 
 from app_streams.events import (
+    COMMS_OFFLINE,
+    COMMS_ONLINE,
+    COMMS_START,
+    USR_CONN_OK,
+    USR_DISCONN_ABT,
+    USR_DISCONN_OK,
     AppEventStream,
     SystemEvent,
     UserMessageEvent,
@@ -37,7 +43,7 @@ class CommsServer:
 
     def __start(self) -> None:
         self.__event_stream.push(
-            SystemEvent(SystemEvent.COMMS_START, (self.hostname, self.port))
+            SystemEvent(COMMS_START, (self.hostname, self.port))
         )
 
         start_server(
@@ -55,12 +61,12 @@ class CommsServer:
         self.ssock = ssock
         self.is_ready.set()
         self.__event_stream.push(
-            SystemEvent(SystemEvent.COMMS_ONLINE, (self.hostname, self.port))
+            SystemEvent(COMMS_ONLINE, (self.hostname, self.port))
         )
         self.__listen_for_connections()
 
     def __on_error(self, err: Exception) -> None:
-        self.__event_stream.push(SystemEvent(SystemEvent.COMMS_OFFLINE, err))
+        self.__event_stream.push(SystemEvent(COMMS_OFFLINE, err))
 
     def __listen_for_connections(self) -> None:
         try:
@@ -70,7 +76,7 @@ class CommsServer:
                 on_client_connected=self.__on_client_connected,
             )
         except ConnectionAbortedError:
-            self.__event_stream.push(SystemEvent(SystemEvent.USR_DISCONN_ABT))
+            self.__event_stream.push(SystemEvent(USR_DISCONN_ABT))
         except BlockingIOError:
             pass
 
@@ -82,7 +88,7 @@ class CommsServer:
         with self.__lock:
             self.__connections[connection_id] = client
 
-        self.__event_stream.push(SystemEvent(SystemEvent.USR_CONN_OK, connection_id))
+        self.__event_stream.push(SystemEvent(USR_CONN_OK, connection_id))
 
         def on_client_connected():
             socket_buffer = ""
@@ -99,7 +105,7 @@ class CommsServer:
                     del self.__connections[connection_id]
 
                 self.__event_stream.push(
-                    SystemEvent(SystemEvent.USR_DISCONN_OK, connection_id)
+                    SystemEvent(USR_DISCONN_OK, connection_id)
                 )
 
         self.__thread_pool_executor.submit(on_client_connected)
