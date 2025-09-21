@@ -4,9 +4,9 @@ from langchain_core.messages import BaseMessage
 
 
 class AgentSessionMemory:
-    def __init__(self) -> None:
+    def __init__(self, init_history: list[BaseMessage] = []) -> None:
         self.lock = threading.Lock()
-        self._history: list[BaseMessage] = []
+        self._history: list[BaseMessage] = init_history
 
     def get(self):
         return [*self._history]
