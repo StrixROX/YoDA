@@ -54,9 +54,7 @@ class OllamaServer:
     def __on_start(self, process: subprocess.Popen) -> None:
         self.process = process
 
-        self.__event_stream.push(
-            SystemEvent(LLM_ONLINE, self.get_server_url())
-        )
+        self.__event_stream.push(SystemEvent(LLM_ONLINE, self.get_server_url()))
         self.is_ready.set()
 
         if self.process is not None:
