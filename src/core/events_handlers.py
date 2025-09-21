@@ -34,7 +34,7 @@ def on_core_system_ready(event: SystemEvent, event_stream: AppEventStream):
 
         toaster = WindowsToaster("YoDA")
         newToast = Toast()
-        newToast.text_fields = [event.message]
+        newToast.text_fields = [startup_greeting]
         toaster.show_toast(newToast)
 
         print(startup_greeting)
