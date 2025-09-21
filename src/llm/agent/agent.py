@@ -1,13 +1,12 @@
 import secrets
 import threading
 
-from langchain_core.messages import BaseMessage, ChatMessage
+from langchain_core.messages import ChatMessage
 from langchain_ollama.chat_models import ChatOllama
 
 from app_streams.events import (
     AGENT_OFFLINE,
     AGENT_ONLINE,
-    AppEvent,
     AppEventStream,
     SystemEvent,
 )
@@ -51,7 +50,7 @@ class Agent:
                 temperature=0.2,
             ).bind_tools(tools=self.__tools)
 
-            #  init llm utilties
+            # init llm utilties
             self.__session_chat_history = AgentSessionMemory()  # secondary memory
 
             # init workflow
@@ -74,19 +73,11 @@ class Agent:
 
     def __on_error(self, err: Exception):
         self.__event_stream.push(SystemEvent(AGENT_OFFLINE, {"error": err}))
-        print(err)  # temp
+        print(err)  #
 
-    def append_to_session_memory(self, messages: list[AppEvent] | list[BaseMessage]):
-        parsed_messages = []
-        for message in messages:
-            if isinstance(message, BaseMessage):
-                parsed_messages.append(message)
-            elif isinstance(message, AppEvent):
-                parsed_messages.append(
-                    ChatMessage(role=message.type, content=str(message))
-                )
-
-        self.__session_chat_history.update(parsed_messages)
+    # def append_to_session_memory(self, messages: list[AppEvent] | list[BaseMessage]):
+    #     parsed_messages = self.convert_event_stream_history_to_base_messages(messages)
+    #     self.__session_chat_history.update(parsed_messages)
 
     def invoke(self, user_message: ChatMessage) -> str:
         if not self.is_ready.is_set():
@@ -100,7 +91,12 @@ class Agent:
             list(map(lambda message: message.content, memory)),
         )
 
-        output_state = self.__graph.invoke({"messages": memory + [user_message]})
+        output_state = self.__graph.invoke(
+            {
+                "messages": memory + [user_message],
+                "event_stream": self.__event_stream,
+            }
+        )
         print(
             "> agent returned:",
             list(map(lambda state: state.content, output_state["messages"])),

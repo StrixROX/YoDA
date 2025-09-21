@@ -10,9 +10,12 @@ from langgraph.graph.message import add_messages
 from langgraph.graph.state import CompiledStateGraph, Runnable
 from langgraph.prebuilt import ToolNode, tools_condition
 
+from app_streams.events import AppEventStream
+
 
 class AgentState(TypedDict):
     messages: Annotated[list[AnyMessage], add_messages]
+    event_stream: AppEventStream
 
 
 def create_graph(

@@ -60,10 +60,6 @@ def on_core_system_ready(event: SystemEvent, event_stream: AppEventStream):
         print(event.message)
 
 
-def on_system_event(event: SystemEvent, agent: Agent):
-    agent.append_to_session_memory([event])
-
-
 def on_user_message(
     event: UserMessageEvent,
     event_stream: AppEventStream,
