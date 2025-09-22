@@ -71,7 +71,7 @@ Additional examples and commands will be added as the feature set grows.
    yo --help
    ```
 
-### Generating Self-Signed SSL Certificates 
+### Generating Self-Signed SSL Certificates
 
 If you need SSL for local testing:
 
@@ -94,11 +94,36 @@ Artifacts will be created under `dist/`.
 
 ```
 src/
-  app_streams/    # Event stream helpers
-  cli/            # CLI entrypoints and utilities
-  comms/          # Communication/server helpers
-  core/           # Core application logic and event handling
-  llm/            # LLM-related modules (e.g., TTS)
+  app_streams/          # Event stream helpers and utilities
+    events.py           # Event handling and streaming logic
+
+  cli/                  # Command-line interface and user interaction
+    main.py             # CLI entry point and command routing
+    user_input.py       # User input handling and validation
+    utils.py            # CLI-specific utilities and helpers
+
+  comms/                # Communication and networking
+    client.py           # Client-side communication logic
+    server.py           # Server-side communication handling
+    utils.py            # Communication utilities and helpers
+
+  core/                 # Core application logic and orchestration
+    main.py             # Main application entry point
+    events_handlers.py  # Event handling and processing
+    utils.py            # Core utilities and shared functions
+    services/           # Core service implementations
+      comms_server.py   # Communication server service
+      llm_server.py     # LLM server service
+
+  llm/                  # LLM integration and AI capabilities
+    server.py           # LLM server implementation
+    tts.py              # Text-to-speech functionality
+    agent/              # AI agent implementation
+      agent.py          # Core agent logic and behavior
+      graph.py          # Agent workflow and graph management
+      memory.py         # Agent memory and persistence
+      tools.py          # Agent tools and capabilities
+      utils.py          # Agent-specific utilities
 ```
 
 ## Future Scope

@@ -10,6 +10,7 @@ Be kind and respectful. Assume positive intent. We welcome contributors from all
 
 1. Fork the repository and create your branch from `main`.
 2. Set up a local environment:
+
    ```bash
    python -m venv dev
 
@@ -18,6 +19,7 @@ Be kind and respectful. Assume positive intent. We welcome contributors from all
    # On macOS/Linux: source dev/bin/activate
    pip install -e .
    ```
+
 3. Run the CLI locally to verify your environment:
    ```bash
    yo --help
@@ -37,16 +39,26 @@ Be kind and respectful. Assume positive intent. We welcome contributors from all
 
 ### Project Structure
 
-Place code under `src/` following existing module organization:
+Place code under `src/` following the existing module organization:
 
 ```
 src/
-  app_streams/
-  cli/
-  comms/
-  core/
-  llm/
+  app_streams/          # Event stream helpers and utilities
+  cli/                  # Command-line interface and user interaction
+  comms/                # Communication and networking
+  core/                 # Core application logic and orchestration
+    services/           # Core service implementations
+  llm/                  # LLM integration and AI capabilities
+    agent/              # AI agent implementation
 ```
+
+Each module has a specific responsibility:
+
+- **app_streams**: Handles event streaming and processing
+- **cli**: Manages command-line interface and user interactions
+- **comms**: Provides communication and networking functionality
+- **core**: Contains main application logic, event handling, and core services
+- **llm**: Implements LLM integration, TTS, and AI agent capabilities
 
 > Note: You are free to create more packages/modules and/or re-organise existing packages if necessary. However, it will be treated as a major version update.
 
@@ -81,5 +93,3 @@ When filing an issue, include:
 ### Questions
 
 Open a discussion or issue if anything is unclear. We’re happy to help you get started.
-
-
