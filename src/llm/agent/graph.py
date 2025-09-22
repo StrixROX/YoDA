@@ -11,11 +11,13 @@ from langgraph.graph.state import CompiledStateGraph, Runnable
 from langgraph.prebuilt import ToolNode, tools_condition
 
 from app_streams.events import AppEventStream
+from llm.agent.memory import AgentPersistentMemory
 
 
 class AgentState(TypedDict):
     messages: Annotated[list[AnyMessage], add_messages]
     event_stream: AppEventStream
+    memory: AgentPersistentMemory
 
 
 def create_graph(

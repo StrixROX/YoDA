@@ -12,7 +12,7 @@ from app_streams.events import (
 )
 from core.services import OllamaServer
 from llm.agent.graph import create_graph
-from llm.agent.memory import AgentSessionMemory
+from llm.agent.memory import AgentPersistentMemory, AgentSessionMemory
 from .tools import available_tools
 
 AGENT_SESSION_ID_HEX_SIZE = 16
@@ -51,6 +51,7 @@ class Agent:
             ).bind_tools(tools=self.__tools)
 
             # init llm utilties
+            self.__memory = AgentPersistentMemory()  # primary memory
             self.__session_chat_history = AgentSessionMemory()  # secondary memory
 
             # init workflow
@@ -85,16 +86,17 @@ class Agent:
                 "Agent invoked before initialization. Did you forget to call the setup() method?"
             )
 
-        memory = self.__session_chat_history.get()
+        chat_history = self.__session_chat_history.get()
         print(
             "> querying against:",
-            list(map(lambda message: message.content, memory)),
+            list(map(lambda message: message.content, chat_history)),
         )
 
         output_state = self.__graph.invoke(
             {
-                "messages": memory + [user_message],
+                "messages": chat_history + [user_message],
                 "event_stream": self.__event_stream,
+                "memory": self.__memory,
             }
         )
         print(
@@ -102,7 +104,7 @@ class Agent:
             list(map(lambda state: state.content, output_state["messages"])),
         )
 
-        new_messages = output_state["messages"][len(memory) :]
+        new_messages = output_state["messages"][len(chat_history) :]
         print(list(map(lambda msg: msg.content, new_messages)))
 
         print("> memory write is locked?", self.__session_chat_history.lock.locked())

@@ -43,7 +43,7 @@ class AgentPersistentMemory:
         except (FileNotFoundError, json.JSONDecodeError):
             self.memory = []
 
-    def __save(self) -> None:
+    def save(self) -> None:
         """Persist memory to disk."""
         with open(self.filepath, "w", encoding="utf-8") as f:
             json.dump(self.memory, f, indent=2, ensure_ascii=False)
@@ -57,7 +57,7 @@ class AgentPersistentMemory:
             # overwrite if same id exists
             self.memory = [s for s in self.memory if s.get("id") != segment.get("id")]
             self.memory.append(segment)
-            self.__save()
+            self.save()
 
     def get_segment_by_id(self, segment_id: str) -> Optional[dict[str, any]]:
         """Retrieve a memory segment by ID."""
@@ -82,7 +82,7 @@ class AgentPersistentMemory:
             before = len(self.memory)
             self.memory = [s for s in self.memory if s.get("id") != segment_id]
             if len(self.memory) < before:
-                self.__save()
+                self.save()
                 return True
             return False
 
