@@ -12,7 +12,7 @@ from typing import Optional
 
 
 @tool
-def search_memory_segments(
+def search_memory(
     query: str,
     state: Annotated[dict, InjectedState],
 ) -> list[dict]:
@@ -150,7 +150,7 @@ available_tools = [
     count_trees,
     get_current_datetime,
     get_system_events_history,
-    search_memory_segments,
+    search_memory,
     add_memory_segment,
     update_memory_segment,
     persist_memory_to_disk,
