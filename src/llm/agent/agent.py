@@ -51,7 +51,9 @@ class Agent:
             ).bind_tools(tools=self.__tools)
 
             # init llm utilties
-            self.__memory = AgentPersistentMemory()  # primary memory
+            self.__memory = AgentPersistentMemory(
+                filepath="data/memory.json"
+            )  # primary memory
             self.__session_chat_history = AgentSessionMemory()  # secondary memory
 
             # init workflow

@@ -1,4 +1,5 @@
 import json
+import os
 import threading
 from typing import Optional
 
@@ -44,7 +45,12 @@ class AgentPersistentMemory:
             self.memory = []
 
     def save(self) -> None:
-        """Persist memory to disk."""
+        """Persist memory to disk. Ensures parent directory exists."""
+        parent_dir = os.path.dirname(self.filepath)
+
+        if parent_dir:
+            os.makedirs(parent_dir, exist_ok=True)
+
         with open(self.filepath, "w", encoding="utf-8") as f:
             json.dump(self.memory, f, indent=2, ensure_ascii=False)
 
