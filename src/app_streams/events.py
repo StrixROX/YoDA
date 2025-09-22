@@ -5,6 +5,37 @@ import os
 from typing import Dict
 from concurrent.futures import ThreadPoolExecutor
 
+# All system event messages
+CORE_SYS_START = (
+    "Starting core systems..."  # data: {"active_services": {[system_name]: bool}}
+)
+CORE_SYS_FINISH = "Finished starting core systems."  # data: {"active_services": {[system_name]: bool}}
+USR_REQ_SHUTDN = "System shutdown requested by user."  # data: None
+
+COMMS_START = (
+    "Starting comms server..."  # data: {"server_hostname": str, "server_port": int}
+)
+COMMS_ONLINE = (
+    "Comms server online."  # data: {"server_hostname": str, "server_port": int},
+)
+COMMS_OFFLINE = "Unable to start comms server."  # data: {"error": Exception}
+
+USR_CONN_OK = "User connected to comms system."  # data: {"connection_id": int}
+USR_DISCONN_OK = "User disconnected from comms system."  # data: {"connection_id": int}
+USR_DISCONN_ABT = "User disconnected from comms system. Connection aborted."  # data: {}
+
+SYS_SPEAK_OK = "System completed speaking."  # data: str
+SYS_SPEAK_ERR = (
+    "System unable to speak."  # data: {"text_content": str, "error": Exception}
+)
+
+LLM_START = "Starting LLM server..."  # data: {"server_url": str}
+LLM_ONLINE = "LLM server online."  # data: {"server_url": str}
+LLM_OFFLINE = "Unable to start LLM server."  # data: {"error": Exception}
+
+AGENT_ONLINE = "Agent online."  # data: {"ollama_url": str, "session_id": str}
+AGENT_OFFLINE = "Agent offline."  # data: {"error": Exception}
+
 
 class AppEvent:
     def __init__(self, type: str, message: str, data: any = None) -> None:
@@ -20,59 +51,40 @@ class AppEvent:
         self.timestamp = dt.now().timestamp()
 
     def __str__(self) -> str:
-        return f"<AppEvent created_on=({dt.fromtimestamp(self.timestamp).isoformat()}) type=('{self.type}') message=('{self.message}') data=({repr(self.data)})>"
+        return f"<{self.__class__.__name__} created_on=({dt.fromtimestamp(self.timestamp).isoformat()}) type=('{self.type}') message=('{self.message}') data=({repr(self.data)})>"
 
 
 class SystemEvent(AppEvent):
-    type = "system-event"
-
-    CORE_SYS_START = "Starting core systems..."  # data: { [system_name]: bool }
-    CORE_SYS_FINISH = "Finished starting core systems."  # data: { [system_name]: bool }
-    USR_REQ_SHUTDN = "System shutdown requested by user."  # data: None
-
-    COMMS_START = "Starting comms server..."  # data: string
-    COMMS_ONLINE = "Comms server online."  # data: string
-    COMMS_OFFLINE = "Unable to start comms server."  # data: Exception
-
-    USR_CONN_OK = "User connected to comms system."  # data: int
-    USR_DISCONN_OK = "User disconnected from comms system."  # data: int
-    USR_DISCONN_ABT = (
-        "User disconnected from comms system. Connection aborted."  # data: None
-    )
-
-    EVENT_HANDLER_START = "Starting event handler thread..."  # data: None
-    EVENT_HANDLER_ONLINE = "Event handler thread online."  # data: None
-    EVENT_HANDLER_OFFLINE = "Unable to start event handler thread."  # data: Exception
-
-    SYS_SPEAK_OK = "System completed speaking."  # data: str
-    SYS_SPEAK_ERR = (
-        "System unable to speak."  # data: {"text_content": str, "error": Exception}
-    )
+    type = "system"
 
     def __init__(self, message: str, data: any = None) -> None:
         super().__init__(self.type, message, data)
 
 
 class UserMessageEvent(AppEvent):
-    type = "user-message"
+    type = "user"
 
-    def __init__(self, message: str, data: any = None) -> None:
-        super().__init__(self.type, message, data)
+    def __init__(self, message: str, connection_id: int) -> None:
+        super().__init__(self.type, message, connection_id)
 
 
-class SystemMessageEvent(AppEvent):
-    type = "system-message"
+class AgentMessageEvent(AppEvent):
+    type = "assistant"
 
     def __init__(self, message: str, data: any = None) -> None:
         super().__init__(self.type, message, data)
 
 
 class AppEventStream:
-    def __init__(self, max_workers=5, history_maxsize=None) -> None:
+    DEFAULT_DUMP_FILENAME = "temp/AppEventStream_history.log"
+
+    def __init__(
+        self, thread_pool_executor: ThreadPoolExecutor, history_maxsize=None
+    ) -> None:
         self.__event_hooks: Dict[str, Dict[int, Callable[[AppEvent], None]]] = dict(
             {"all": dict()}
         )
-        self.__executor = ThreadPoolExecutor(max_workers=max_workers)
+        self.__executor = thread_pool_executor
         self.history = deque(maxlen=history_maxsize)
 
     # If you truly know that:
@@ -105,7 +117,7 @@ class AppEventStream:
         # send the event to all hooks registered for that event type
         # also send the event to all the hooks registered for 'all' events
         for event_hook in self.__iter_hooks_for_event(event.type):
-            self.__executor.submit(event_hook, event, self)
+            self.__executor.submit(event_hook, event)
 
         self.history.append(event)
 
@@ -135,10 +147,7 @@ class AppEventStream:
 
         del event_hooks_for_type[event_hook_id]
 
-    def close(self):
-        self.__executor.shutdown()
-
-    def dump(self, dump_filename="temp/AppEventStream_history.log"):
+    def dump(self, dump_filename=DEFAULT_DUMP_FILENAME):
         os.makedirs(os.path.dirname(dump_filename), exist_ok=True)
         with open(dump_filename, "w") as f:
             f.writelines([str(event) + "\n" for event in self.history])

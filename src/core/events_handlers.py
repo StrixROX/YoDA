@@ -1,18 +1,29 @@
+from langchain_core.messages import ChatMessage
 from app_streams.events import (
+    AGENT_OFFLINE,
+    AGENT_ONLINE,
+    COMMS_OFFLINE,
+    COMMS_ONLINE,
+    CORE_SYS_FINISH,
+    LLM_OFFLINE,
+    LLM_ONLINE,
+    USR_CONN_OK,
+    USR_DISCONN_OK,
+    USR_REQ_SHUTDN,
     AppEventStream,
     SystemEvent,
-    SystemMessageEvent,
+    AgentMessageEvent,
     UserMessageEvent,
 )
 from windows_toasts import WindowsToaster, Toast
 
+from comms.utils import pack_msg
+from core.services import CommsServer
+from llm.agent import Agent
 
-# LLM calls on system events will go here
-def system_event_handler(
-    event: SystemEvent,
-    event_stream: AppEventStream,
-) -> None:
-    if event.message == SystemEvent.CORE_SYS_FINISH:
+
+def on_core_system_ready(event: SystemEvent, event_stream: AppEventStream):
+    if event.message == CORE_SYS_FINISH:
         core_systems_status = event.data
 
         startup_greeting = (
@@ -21,23 +32,48 @@ def system_event_handler(
             else "Welcome! Some core systems are offline."
         )
 
-        event_stream.push(SystemMessageEvent(startup_greeting))
+        toaster = WindowsToaster("YoDA")
+        newToast = Toast()
+        newToast.text_fields = [startup_greeting]
+        toaster.show_toast(newToast)
+
+        print(startup_greeting)
+
+        event_stream.push(AgentMessageEvent(startup_greeting, -1))
+
+    elif event.message in [
+        COMMS_ONLINE,
+        COMMS_OFFLINE,
+        LLM_ONLINE,
+        LLM_OFFLINE,
+        AGENT_ONLINE,
+        AGENT_OFFLINE,
+    ]:
+        print(f"[ {event.message} ]")
+    elif event.message in [
+        USR_CONN_OK,
+        USR_DISCONN_OK,
+    ]:
+        connection_id = event.data["connection_id"]
+        print(f"[ {connection_id} ] {event.message}")
+    elif event.message == USR_REQ_SHUTDN:
+        print(event.message)
 
 
-# TTS/GUI Render calls will go here
-def system_message_handler(
-    event: SystemMessageEvent,
-    event_stream: AppEventStream,
-) -> None:
-    toaster = WindowsToaster("YoDA")
-    newToast = Toast()
-    newToast.text_fields = [event.message]
-    toaster.show_toast(newToast)
-
-
-# LLM calls on user input will go here
-def user_message_handler(
+def on_user_message(
     event: UserMessageEvent,
     event_stream: AppEventStream,
-) -> None:
-    event_stream.push(SystemMessageEvent(f"Responding to: {event.message}"))
+    comms_server: CommsServer,
+    agent: Agent,
+):
+    try:
+        connection_id = event.data
+
+        response = agent.invoke(
+            ChatMessage(role=UserMessageEvent.type, content=event.message)
+        )
+
+        comms_server.get_connection_by_id(event.data).send(pack_msg(response))
+        event_stream.push(AgentMessageEvent(response, connection_id))
+    except Exception as e:
+        print(e)

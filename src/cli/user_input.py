@@ -1,53 +1,42 @@
 import argparse
 import ssl
-import threading
-import time
-from typing import Union
 
-from cli.server import connect_to_core_systems, send_message_to_core_server
-from cli.utils import greet
+from cli.utils import greet, show_loading_text
+from comms.client import connect_to_comms_server, listen_for_messages, send_message
 
 
 def start_interactive_mode(args: argparse.Namespace) -> None:
     greet(heading="YoDA", subHeading="Welcome, you are!")
 
-    _ssock, _error = None, None
+    stop_loading_text = show_loading_text("Securely connecting to comms server")
 
-    def connection_callback(ssock: ssl.SSLSocket, error: Union[None, Exception]):
-        nonlocal _ssock, _error
-        _ssock, _error = ssock, error
-
-    connection_thread = threading.Thread(
-        target=connect_to_core_systems, args=(args, connection_callback)
+    connect_to_comms_server(
+        hostname="localhost",
+        port=args.port,
+        on_done=stop_loading_text,
+        on_connect=on_server_connected,
+        on_error=lambda err: print(
+            "[Error] Unable to connect to comms server. Did you forget to start the comms server?\n"
+        ),
     )
 
-    connection_thread.start()
 
-    loading_text = "Securely connecting to comms server"
-    i = 0
-    while not _ssock and not _error:
-        dots = "." * (i % 4) + " " * (3 - i % 4)
-        print("\r" + loading_text + dots, end="", flush=True)
-        time.sleep(0.5)
-        i += 1
-
-    connection_thread.join()
-    print("\033[2K\r", end="", flush=True)  # clear "Loading..." line
-
-    if _error:
-        print(
-            "[Error] Unable to connect to comms server. Did you forget to start the comms server?\n"
-        )
-
-        return
-    else:
-        print("- Comms server connected\n")
-
+def on_server_connected(ssock: ssl.SSLSocket):
     try:
-        with _ssock:
-            while True:
-                prompt = input("> ")
+        with ssock:
+            print("- Comms server connected\n")
 
-                send_message_to_core_server(prompt, _ssock)
+            socket_buffer = ""
+
+            while True:
+                prompt = input("> ").strip()
+                if prompt == "":
+                    continue
+
+                send_message(ssock, prompt)
+                message, socket_buffer = listen_for_messages(ssock, socket_buffer)
+
+                print(f"\n{message}\n")
+
     except ssl.SSLEOFError:
         print("\n[Error] Comms server unavailable. Exiting...")
