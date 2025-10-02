@@ -12,9 +12,11 @@ from app_streams.events import (
     AppEventStream,
     SystemEvent,
     UserMessageEvent,
+    convert_app_event_to_document,
 )
 from core.events_handlers import (
     on_core_system_ready,
+    on_new_system_event,
     on_user_message,
 )
 
@@ -112,6 +114,14 @@ def setup_services(
 
     event_stream.push(SystemEvent(CORE_SYS_FINISH, {"active_services": {**status}}))
 
+    agent.add_to_event_stream_vector_store(
+        [
+            convert_app_event_to_document(event)
+            for event in list(event_stream.history)
+            if isinstance(event, SystemEvent)
+        ]
+    )
+
     return comms_server, llm_server, agent
 
 
@@ -135,4 +145,9 @@ def setup_event_hooks(
         event_hook=lambda event: on_user_message(
             event, event_stream, comms_server, agent
         ),
+    )
+
+    event_stream.add_event_hook(
+        event_type=SystemEvent.type,
+        event_hook=lambda event: on_new_system_event(event, agent),
     )

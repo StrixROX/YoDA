@@ -1,6 +1,7 @@
 import secrets
 import threading
 
+from langchain_core.documents import Document
 from langchain_core.messages import ChatMessage
 from langchain_ollama.chat_models import ChatOllama
 
@@ -11,8 +12,18 @@ from app_streams.events import (
     SystemEvent,
 )
 from core.services import OllamaServer
-from llm.agent.graph import create_graph
-from llm.agent.memory import AgentPersistentMemory, AgentSessionMemory
+from llm.agent.graph import (
+    create_graph,
+    init_analyzer_llm,
+    init_binary_grader_llm,
+    init_embedding_model,
+    # init_query_summarizer,
+)
+from llm.agent.memory import (
+    AgentPersistentMemory,
+    AgentSessionMemory,
+    InMemoryVectorStoreWithLock,
+)
 from .tools import available_tools
 
 AGENT_SESSION_ID_HEX_SIZE = 16
@@ -43,21 +54,45 @@ class Agent:
             # init the llm
             self.__tools = available_tools
             self.__llm = ChatOllama(
-                model="qwen3:8b",
+                model="gpt-oss:latest",
                 reasoning=False,
                 base_url=self.__ollama_url,
                 validate_model_on_init=False,
-                temperature=0.2,
             ).bind_tools(tools=self.__tools)
+
+            # question analyzer Llm
+            self.__analyzer_llm = init_analyzer_llm(ollama_url=self.__ollama_url)
+            # binary grader for documents
+            self.__binary_document_grader_llm = init_binary_grader_llm(
+                ollama_url=self.__ollama_url
+            )
+            # embeddings model
+            self.__embeddings_model = init_embedding_model(ollama_url=self.__ollama_url)
+            # self.__query_summarizer_llm = init_query_summarizer(
+            #     ollama_url=self.__ollama_url
+            # )
+
+            # vector stores
+            self.__system_events_vector_store = InMemoryVectorStoreWithLock(
+                embedding=self.__embeddings_model
+            )
 
             # init llm utilties
             self.__memory = AgentPersistentMemory(
-                filepath="data/memory.json"
+                embeddings_model=self.__embeddings_model, filepath="data/memory.json"
             )  # primary memory
             self.__session_chat_history = AgentSessionMemory()  # secondary memory
 
             # init workflow
-            self.__graph = create_graph(llm=self.__llm, tools=self.__tools)
+            self.__graph = create_graph(
+                analyzer_llm=self.__analyzer_llm,
+                binary_document_grader_llm=self.__binary_document_grader_llm,
+                # query_summarizer_llm=self.__query_summarizer_llm,
+                memory_vector_store=self.__memory.vector_store,
+                system_events_vector_store=self.__system_events_vector_store,
+                llm=self.__llm,
+                tools=self.__tools,
+            )
 
             self.__on_ready()
 
@@ -76,11 +111,10 @@ class Agent:
 
     def __on_error(self, err: Exception):
         self.__event_stream.push(SystemEvent(AGENT_OFFLINE, {"error": err}))
-        print(err)  #
+        print(err)
 
-    # def append_to_session_memory(self, messages: list[AppEvent] | list[BaseMessage]):
-    #     parsed_messages = self.convert_event_stream_history_to_base_messages(messages)
-    #     self.__session_chat_history.update(parsed_messages)
+    def add_to_event_stream_vector_store(self, docs: list[Document]):
+        self.__system_events_vector_store.add_documents(docs)
 
     def invoke(self, user_message: ChatMessage) -> str:
         if not self.is_ready.is_set():
@@ -88,37 +122,42 @@ class Agent:
                 "Agent invoked before initialization. Did you forget to call the setup() method?"
             )
 
-        chat_history = self.__session_chat_history.get()
-        print(
-            "> querying against:",
-            list(map(lambda message: message.content, chat_history)),
-        )
+        try:
+            chat_history = self.__session_chat_history.get()
+            print(
+                "> querying against:",
+                list(map(lambda message: message.content, chat_history)),
+            )
 
-        output_state = self.__graph.invoke(
-            {
-                "messages": chat_history + [user_message],
-                "event_stream": self.__event_stream,
-                "memory": self.__memory,
-            }
-        )
-        print(
-            "> agent returned:",
-            list(map(lambda state: state.content, output_state["messages"])),
-        )
+            output_state = self.__graph.invoke(
+                {
+                    "messages": chat_history + [user_message],
+                    "event_stream": self.__event_stream,
+                    "memory": self.__memory,
+                }
+            )
+            print(
+                "> agent returned:",
+                list(map(lambda state: state.content, output_state["messages"])),
+            )
 
-        new_messages = output_state["messages"][len(chat_history) :]
-        print(list(map(lambda msg: msg.content, new_messages)))
+            new_messages = output_state["messages"][len(chat_history) :]
+            print(list(map(lambda msg: msg.content, new_messages)))
 
-        print("> memory write is locked?", self.__session_chat_history.lock.locked())
-        self.__session_chat_history.update(new_messages)
-        print(
-            "> new history:",
-            list(
-                map(
-                    lambda message: message.content,
-                    self.__session_chat_history.get(),
-                )
-            ),
-        )
+            print(
+                "> memory write is locked?", self.__session_chat_history.lock.locked()
+            )
+            self.__session_chat_history.update(new_messages)
+            print(
+                "> new history:",
+                list(
+                    map(
+                        lambda message: message.content,
+                        self.__session_chat_history.get(),
+                    )
+                ),
+            )
 
-        return new_messages[-1].content
+            return new_messages[-1].content
+        except Exception as err:
+            print(err)

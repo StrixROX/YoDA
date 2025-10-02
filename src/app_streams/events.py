@@ -5,6 +5,8 @@ import os
 from typing import Dict
 from concurrent.futures import ThreadPoolExecutor
 
+from langchain_core.documents import Document
+
 # All system event messages
 CORE_SYS_START = (
     "Starting core systems..."  # data: {"active_services": {[system_name]: bool}}
@@ -54,25 +56,36 @@ class AppEvent:
         return f"<{self.__class__.__name__} created_on=({dt.fromtimestamp(self.timestamp).isoformat()}) type=('{self.type}') message=('{self.message}') data=({repr(self.data)})>"
 
 
+def convert_app_event_to_document(event: AppEvent):
+    return Document(
+        page_content=str(event),
+        metadata={
+            "source": event.type,
+            "type": event.__class__.__name__,
+            "created_on": event.timestamp,
+        },
+    )
+
+
 class SystemEvent(AppEvent):
     type = "system"
 
     def __init__(self, message: str, data: any = None) -> None:
-        super().__init__(self.type, message, data)
+        super().__init__(type=self.type, message=message, data=data)
 
 
 class UserMessageEvent(AppEvent):
     type = "user"
 
     def __init__(self, message: str, connection_id: int) -> None:
-        super().__init__(self.type, message, connection_id)
+        super().__init__(type=self.type, message=message, data=connection_id)
 
 
 class AgentMessageEvent(AppEvent):
     type = "assistant"
 
     def __init__(self, message: str, data: any = None) -> None:
-        super().__init__(self.type, message, data)
+        super().__init__(type=self.type, message=message, data=data)
 
 
 class AppEventStream:
