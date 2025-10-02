@@ -134,99 +134,9 @@ def init_embedding_model(ollama_url: str):
     )
 
 
-class QuerySummarizerModelSchema(BaseModel):
-    """
-    summarizes the chat history to a single user query.
-    """
-
-    query: str = Field(
-        ...,
-        description="concise and accurate summary of the user's query as implied by the chat history",
-    )
-
-
-# QUERY_SUMMARIZER_PROMPT = """
-# Based on the provided chat history (newest last), summarise the user's request in a concise and accurate manner. preserve all keywords, nouns and logic.
-# """
-# QUERY_SUMMARIZER_PROMPT = """
-# You are given a multi-turn conversation between a user and an assistant.
-# Your task is to rewrite the final user message so that it is fully self-contained.
-# Resolve all pronouns, vague references (e.g., "this", "that", "it", "they", "above"),
-# and context-dependent phrases by replacing them with the actual keywords or phrases
-# from earlier in the conversation.
-
-# Output only a single concise sentence that preserves the exact intent of the final user message.
-# Do not add new information, explanations, or responses — just rewrite the message clearly.
-# """ # output = "hi there is the server running"
-# QUERY_SUMMARIZER_PROMPT = """
-# You are given a multi-turn conversation between a user and an assistant.
-# Your task is to rewrite ONLY the final user message so that it becomes a fully self-contained query or statement.
-
-# - If the last user message contains vague references (e.g., "this", "that", "it", "they", "above"), replace them with the appropriate words or phrases from earlier in the conversation.
-# - If the last user message is already self-contained, output it exactly as it is.
-# - Do not include greetings or earlier context unless directly referenced.
-# - Output only the rewritten last user message, nothing else.
-# """  # output = ""
-# QUERY_SUMMARIZER_PROMPT = """
-# You are given a conversation between a user and an assistant.
-# Your task is to rewrite ONLY the final user message so that it becomes a fully self-contained query or statement.
-
-# - Use the provided supporting chat context ONLY to resolve vague references in the last user message (such as "this", "that", "it", "they", or "above").
-# - If the last user message is already self-contained, leave it unchanged.
-# - Do not include greetings, small talk, or unrelated context.
-# - Do not add explanations or responses — output only the rewritten message.
-# - Output must strictly follow the JSON schema provided.
-# """  # output = ""
-# QUERY_SUMMARIZER_PROMPT = """
-# You are given a conversation between a user and an assistant.
-
-# Generate four factual points summarizing the key context from the entire conversation and generate a final concise summary of the question being asked in the last user message..
-# Make sure that:
-# - Each point must be a standalone fact.
-# - Use neutral, factual language.
-# - Do not include speculation or irrelevant greetings.
-
-# Guidelines:
-# - The factual points should include both the user's intent and the assistant's responses where relevant.
-# - The summary must restate the last user message clearly, resolving any vague references (e.g., "this", "that", "it") using the chat context.
-# - Output should be a single string
-# """  # output = ""
-
-
-# def init_query_summarizer(ollama_url: str):
-#     llm = ChatOllama(
-#         model="deepseek-r1:8b",
-#         reasoning=False,
-#         base_url=ollama_url,
-#         validate_model_on_init=False,
-#         temperature=0,
-#         keep_alive=True,
-#     )
-
-#     llm_with_structured_output = llm.with_structured_output(
-#         schema=QuerySummarizerModelSchema,
-#         method="json_schema",
-#     )
-
-#     prompt_template = ChatPromptTemplate.from_messages(
-#         [
-#             ("system", QUERY_SUMMARIZER_PROMPT),
-#             (
-#                 "human",
-#                 "User message: {user_message}\n\nSupporting chat context: {chat_context}",
-#             ),
-#         ]
-#     )
-
-#     query_summarizer = prompt_template | llm_with_structured_output
-
-#     return query_summarizer
-
-
 def create_graph(
     analyzer_llm: RunnableSerializable[dict, dict | BaseModel],
     binary_document_grader_llm: RunnableSerializable[dict, dict | BaseModel],
-    # query_summarizer_llm: RunnableSerializable[dict, dict | BaseModel],
     memory_vector_store: VectorStore,
     system_events_vector_store: VectorStore,
     llm: Runnable[LanguageModelInput, BaseChatMessageHistory],

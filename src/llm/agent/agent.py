@@ -17,7 +17,6 @@ from llm.agent.graph import (
     init_analyzer_llm,
     init_binary_grader_llm,
     init_embedding_model,
-    # init_query_summarizer,
 )
 from llm.agent.memory import (
     AgentPersistentMemory,
@@ -68,9 +67,6 @@ class Agent:
             )
             # embeddings model
             self.__embeddings_model = init_embedding_model(ollama_url=self.__ollama_url)
-            # self.__query_summarizer_llm = init_query_summarizer(
-            #     ollama_url=self.__ollama_url
-            # )
 
             # vector stores
             self.__system_events_vector_store = InMemoryVectorStoreWithLock(
@@ -87,7 +83,6 @@ class Agent:
             self.__graph = create_graph(
                 analyzer_llm=self.__analyzer_llm,
                 binary_document_grader_llm=self.__binary_document_grader_llm,
-                # query_summarizer_llm=self.__query_summarizer_llm,
                 memory_vector_store=self.__memory.vector_store,
                 system_events_vector_store=self.__system_events_vector_store,
                 llm=self.__llm,
