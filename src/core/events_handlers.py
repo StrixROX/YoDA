@@ -14,6 +14,7 @@ from app_streams.events import (
     SystemEvent,
     AgentMessageEvent,
     UserMessageEvent,
+    convert_app_event_to_document,
 )
 from windows_toasts import WindowsToaster, Toast
 
@@ -72,8 +73,25 @@ def on_user_message(
         response = agent.invoke(
             ChatMessage(role=UserMessageEvent.type, content=event.message)
         )
+        if len(response) == 0:
+            response = "[ Error ] The agent returned empty response."
 
         comms_server.get_connection_by_id(event.data).send(pack_msg(response))
         event_stream.push(AgentMessageEvent(response, connection_id))
+    except Exception as e:
+        print(e)
+
+
+def on_new_system_event(
+    event: SystemEvent,
+    agent: Agent,
+):
+    try:
+        agent.add_to_event_stream_vector_store(
+            [
+                convert_app_event_to_document(event),
+            ]
+        )
+
     except Exception as e:
         print(e)

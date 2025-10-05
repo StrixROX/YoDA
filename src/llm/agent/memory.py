@@ -3,7 +3,29 @@ import os
 import threading
 from typing import Optional
 
+from langchain_core.documents import Document
+from langchain_core.embeddings import Embeddings
 from langchain_core.messages import BaseMessage
+from langchain_core.vectorstores import InMemoryVectorStore
+from langchain_ollama.embeddings import OllamaEmbeddings
+
+
+class InMemoryVectorStoreWithLock(InMemoryVectorStore):
+    def __init__(self, embedding: Embeddings) -> None:
+        super().__init__(embedding)
+        self.__lock = threading.Lock()
+
+    def add_documents(
+        self, documents: list[Document], ids: Optional[list[str]] = None, **kwargs: any
+    ) -> list[str]:
+        with self.__lock:
+            return super().add_documents(documents, ids, **kwargs)
+
+    def similarity_search(
+        self, query: str, k: int = 4, **kwargs: any
+    ) -> list[Document]:
+        with self.__lock:
+            return super().similarity_search(query, k, **kwargs)
 
 
 class AgentSessionMemory:
@@ -30,10 +52,13 @@ class AgentPersistentMemory:
     Each segment has at least: { "id": str, "name": str, "description": str, "data": dict }
     """
 
-    def __init__(self, filepath: str = "memory.json") -> None:
+    def __init__(
+        self, embeddings_model: OllamaEmbeddings, filepath: str = "memory.json"
+    ) -> None:
         self.filepath = filepath
         self.lock = threading.RLock()
         self.memory: list[dict[str, any]] = []
+        self.vector_store = InMemoryVectorStore(embedding=embeddings_model)
         self.__load()
 
     def __load(self) -> None:
@@ -41,6 +66,14 @@ class AgentPersistentMemory:
         try:
             with open(self.filepath, "r", encoding="utf-8") as f:
                 self.memory = json.load(f)
+
+                self.vector_store.add_documents(
+                    [
+                        Document(page_content=str(segment), id=segment["id"])
+                        for segment in self.memory
+                    ]
+                )
+
         except (FileNotFoundError, json.JSONDecodeError):
             self.memory = []
 
@@ -63,6 +96,9 @@ class AgentPersistentMemory:
             # overwrite if same id exists
             self.memory = [s for s in self.memory if s.get("id") != segment.get("id")]
             self.memory.append(segment)
+            self.vector_store.add_documents(
+                [Document(page_content=str(segment), id=segment["id"])]
+            )
             self.save()
 
     def get_segment_by_id(self, segment_id: str) -> Optional[dict[str, any]]:
@@ -87,6 +123,7 @@ class AgentPersistentMemory:
         with self.lock:
             before = len(self.memory)
             self.memory = [s for s in self.memory if s.get("id") != segment_id]
+            self.vector_store.delete([segment_id])
             if len(self.memory) < before:
                 self.save()
                 return True

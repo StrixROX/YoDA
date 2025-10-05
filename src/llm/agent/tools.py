@@ -12,50 +12,7 @@ from typing import Optional
 
 
 @tool
-def search_memory(
-    query: str,
-    state: Annotated[dict, InjectedState],
-) -> list[dict]:
-    """
-    Search persistent memory segments by query against name/description.
-    Returns a list of segment dicts.
-    """
-    memory = state.get("memory")
-    if memory is None:
-        return []
-    return memory.find_segments(query)
-
-
-@tool
-def add_memory_segment(
-    segment_id: str,
-    name: str,
-    description: str,
-    data: dict,
-    state: Annotated[dict, InjectedState],
-) -> dict:
-    """
-    Add a new memory segment. Overwrites if the id already exists.
-    Returns the stored segment.
-    """
-    memory = state.get("memory")
-    if memory is None:
-        return {
-            "error": "memory_not_available",
-            "message": "No AgentPersistentMemory available in state under key 'memory'",
-        }
-    segment = {
-        "id": segment_id,
-        "name": name,
-        "description": description,
-        "data": data,
-    }
-    memory.add_segment(segment)
-    return segment
-
-
-@tool
-def update_memory_segment(
+def update_memory(
     segment_id: str,
     name: Optional[str] = None,
     description: Optional[str] = None,
@@ -63,7 +20,7 @@ def update_memory_segment(
     state: Annotated[dict, InjectedState] = None,
 ) -> dict:
     """
-    Update an existing memory segment's fields. Provide any of name/description/data.
+    Update an existing memory segment's fields or add a new memory segment. Provide any of name/description/data.
     Returns the updated segment, or an error if not found.
     """
     memory = None if state is None else state.get("memory")
@@ -72,9 +29,17 @@ def update_memory_segment(
             "error": "memory_not_available",
             "message": "No AgentPersistentMemory available in state under key 'memory'",
         }
+
     existing = memory.get_segment_by_id(segment_id)
     if existing is None:
-        return {"error": "not_found", "message": f"Segment '{segment_id}' not found"}
+        new_segment = {
+            "id": segment_id,
+            "name": name,
+            "description": description,
+            "data": data,
+        }
+        memory.add_segment(new_segment)
+        return new_segment
 
     updated = dict(existing)
     if name is not None:
@@ -86,25 +51,6 @@ def update_memory_segment(
 
     memory.add_segment(updated)
     return updated
-
-
-@tool
-def persist_memory_to_disk(
-    state: Annotated[dict, InjectedState],
-) -> str:
-    """
-    Persist current memory state to disk explicitly.
-    Returns a status string.
-    """
-    memory = state.get("memory")
-    if memory is None:
-        return "memory_not_available"
-
-    try:
-        memory.save()
-        return "saved"
-    except Exception as e:
-        return f"error: {e}"
 
 
 @tool
@@ -150,8 +96,5 @@ available_tools = [
     count_trees,
     get_current_datetime,
     get_system_events_history,
-    search_memory,
-    add_memory_segment,
-    update_memory_segment,
-    persist_memory_to_disk,
+    update_memory,
 ]

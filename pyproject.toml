@@ -1,12 +1,18 @@
 [project]
 name="yoda"
-version="0.0.1"
+version="0.1.0"
 description="Centralised System Automations with LLM"
 readme="README.md"
 requires-python=">=3.10.11"
 dependencies=[
     "art",
-    "cryptography"
+    "cryptography",
+    "requests",
+    "Windows-Toasts",
+    "langchain_core",
+    "langchain_ollama",
+    "langgraph",
+    "pydantic"
 ]
 
 [project.scripts]
